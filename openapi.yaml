@@ -1,0 +1,1471 @@
+openapi: 3.0.3
+info:
+  title: Interview Coach API
+  version: 1.0.0
+  description: Static API spec derived from the current Spring controllers and DTOs.
+servers:
+  - url: http://localhost:8080
+    description: Local backend
+tags:
+  - name: System
+  - name: Auth
+  - name: User
+  - name: Profiles
+  - name: Sessions
+  - name: Progress
+  - name: Admin Users
+  - name: Admin Profiles
+  - name: Admin Questions
+  - name: Admin Profile Questions
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size20:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 20
+    Size50:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 50
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+    UserStatus:
+      type: string
+      enum: [ACTIVE, BLOCKED, DELETED]
+    InterviewDirection:
+      type: string
+      enum: [BACKEND, FRONTEND, DEVOPS]
+    InterviewLevel:
+      type: string
+      enum: [JUNIOR, MIDDLE]
+    ProfileStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, ARCHIVED]
+    QuestionType:
+      type: string
+      enum: [TECHNICAL, BEHAVIORAL, GENERAL]
+    QuestionStatus:
+      type: string
+      enum: [ACTIVE, DISABLED]
+    SessionState:
+      type: string
+      enum: [CREATED, IN_PROGRESS, PAUSED, FINISHED, PROCESSING, REPORT_READY, FAILED, CANCELED]
+    SenderType:
+      type: string
+      enum: [USER, INTERVIEWER, SYSTEM]
+    MessageType:
+      type: string
+      enum: [QUESTION, ANSWER, INFO, ERROR]
+    ReportStatus:
+      type: string
+      enum: [PENDING, READY, FAILED]
+    ReportItemType:
+      type: string
+      enum: [STRENGTH, WEAKNESS, RECOMMENDATION, CATEGORY_SCORE]
+    PreferenceResponse:
+      type: object
+      properties:
+        preferredDirection:
+          $ref: '#/components/schemas/InterviewDirection'
+        preferredLevel:
+          $ref: '#/components/schemas/InterviewLevel'
+        preferredLanguage:
+          type: string
+        interfaceLanguage:
+          type: string
+        theme:
+          type: string
+    UserResponse:
+      type: object
+      required: [id, email, status, role]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        role:
+          type: string
+        preference:
+          $ref: '#/components/schemas/PreferenceResponse'
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          maxLength: 100
+        preferredDirection:
+          $ref: '#/components/schemas/InterviewDirection'
+        preferredLevel:
+          $ref: '#/components/schemas/InterviewLevel'
+        preferredLanguage:
+          type: string
+          maxLength: 30
+        interfaceLanguage:
+          type: string
+          maxLength: 10
+        theme:
+          type: string
+          maxLength: 20
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+          description: Must contain at least one letter and one digit.
+    EmailVerificationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    EmailVerificationConfirmRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    PasswordResetConfirmRequest:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 64
+    PasswordResetResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        resetToken:
+          type: string
+          nullable: true
+    VerificationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          nullable: true
+    AuthResponse:
+      type: object
+      required: [accessToken, refreshToken, tokenType, expiresIn, user]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          format: int64
+        user:
+          $ref: '#/components/schemas/UserResponse'
+    ProfileQuestionResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        questionId:
+          $ref: '#/components/schemas/UUID'
+        questionText:
+          type: string
+        questionType:
+          type: string
+        orderIndex:
+          type: integer
+        required:
+          type: boolean
+    ProfileResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        title:
+          type: string
+        description:
+          type: string
+        direction:
+          $ref: '#/components/schemas/InterviewDirection'
+        level:
+          $ref: '#/components/schemas/InterviewLevel'
+        status:
+          $ref: '#/components/schemas/ProfileStatus'
+        tags:
+          type: array
+          items:
+            type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileQuestionResponse'
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    ProfileRequest:
+      type: object
+      required: [title, description, direction, level]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        direction:
+          $ref: '#/components/schemas/InterviewDirection'
+        level:
+          $ref: '#/components/schemas/InterviewLevel'
+        tags:
+          type: array
+          items:
+            type: string
+    ProfileQuestionRequest:
+      type: object
+      required: [questionId, orderIndex]
+      properties:
+        questionId:
+          $ref: '#/components/schemas/UUID'
+        orderIndex:
+          type: integer
+        required:
+          type: boolean
+          default: false
+    QuestionRequest:
+      type: object
+      required: [text, questionType]
+      properties:
+        text:
+          type: string
+        questionType:
+          $ref: '#/components/schemas/QuestionType'
+        difficulty:
+          $ref: '#/components/schemas/InterviewLevel'
+        direction:
+          $ref: '#/components/schemas/InterviewDirection'
+        status:
+          $ref: '#/components/schemas/QuestionStatus'
+    QuestionResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        text:
+          type: string
+        questionType:
+          $ref: '#/components/schemas/QuestionType'
+        difficulty:
+          $ref: '#/components/schemas/InterviewLevel'
+        direction:
+          $ref: '#/components/schemas/InterviewDirection'
+        status:
+          $ref: '#/components/schemas/QuestionStatus'
+        createdBy:
+          $ref: '#/components/schemas/UUID'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateSessionRequest:
+      type: object
+      required: [profileId]
+      properties:
+        profileId:
+          $ref: '#/components/schemas/UUID'
+    SessionResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        profileId:
+          $ref: '#/components/schemas/UUID'
+        profileTitle:
+          type: string
+        state:
+          $ref: '#/components/schemas/SessionState'
+        currentQuestionIndex:
+          type: integer
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        durationSeconds:
+          type: integer
+          format: int64
+          nullable: true
+    SessionStateResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/SessionResponse'
+        action:
+          type: string
+    SessionMessageResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        senderType:
+          $ref: '#/components/schemas/SenderType'
+        messageType:
+          $ref: '#/components/schemas/MessageType'
+        content:
+          type: string
+        sequenceNumber:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    SendMessageRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          maxLength: 4000
+    SendMessageResponse:
+      type: object
+      properties:
+        userMessage:
+          $ref: '#/components/schemas/SessionMessageResponse'
+        systemReply:
+          $ref: '#/components/schemas/SessionMessageResponse'
+    ReportItemResponse:
+      type: object
+      properties:
+        itemType:
+          $ref: '#/components/schemas/ReportItemType'
+        title:
+          type: string
+        content:
+          type: string
+        score:
+          type: number
+          format: double
+          nullable: true
+        sortOrder:
+          type: integer
+    ReportResponse:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+        summaryText:
+          type: string
+          nullable: true
+        overallScore:
+          type: number
+          format: double
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportItemResponse'
+    ProgressResponse:
+      type: object
+      properties:
+        totalSessions:
+          type: integer
+          format: int64
+        finishedSessions:
+          type: integer
+          format: int64
+        averageScore:
+          type: number
+          format: double
+          nullable: true
+        reportsReady:
+          type: integer
+          format: int64
+    PageProfileResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        hasNext:
+          type: boolean
+    PageSessionResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        hasNext:
+          type: boolean
+    PageSessionMessageResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionMessageResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        hasNext:
+          type: boolean
+    AdminUserUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        roleCode:
+          type: string
+        preferredDirection:
+          $ref: '#/components/schemas/InterviewDirection'
+        preferredLevel:
+          $ref: '#/components/schemas/InterviewLevel'
+        preferredLanguage:
+          type: string
+          maxLength: 30
+        interfaceLanguage:
+          type: string
+          maxLength: 10
+        theme:
+          type: string
+          maxLength: 20
+    AdminUserResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        roleCode:
+          type: string
+        preference:
+          $ref: '#/components/schemas/PreferenceResponse'
+security:
+  - bearerAuth: []
+paths:
+  /:
+    get:
+      tags: [System]
+      summary: Service info
+      security: []
+      responses:
+        '200':
+          description: OK
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '202':
+          description: Verification code issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResponse'
+        '400':
+          description: Validation or password rules failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/verify-email/request:
+    post:
+      tags: [Auth]
+      summary: Resend email verification code
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+      responses:
+        '202':
+          description: Code issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/verify-email/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm email verification code
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationConfirmRequest'
+      responses:
+        '204':
+          description: Email verified
+        '400':
+          description: Invalid code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Email not verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout and revoke refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: Logged out
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/password/reset:
+    post:
+      tags: [Auth]
+      summary: Request password reset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '202':
+          description: Reset requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetResponse'
+  /auth/password/reset/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm password reset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+      responses:
+        '204':
+          description: Password updated
+        '400':
+          description: Invalid token or invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /user:
+    get:
+      tags: [User]
+      summary: Current user profile
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [User]
+      summary: Update current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /progress:
+    get:
+      tags: [Progress]
+      summary: User progress dashboard metrics
+      responses:
+        '200':
+          description: Progress stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressResponse'
+  /profiles:
+    get:
+      tags: [Profiles]
+      summary: Public profile catalog
+      security: []
+      parameters:
+        - name: direction
+          in: query
+          schema:
+            $ref: '#/components/schemas/InterviewDirection'
+        - name: level
+          in: query
+          schema:
+            $ref: '#/components/schemas/InterviewLevel'
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size20'
+      responses:
+        '200':
+          description: Profile page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageProfileResponse'
+  /profiles/{profileId}:
+    get:
+      tags: [Profiles]
+      summary: Public profile by id
+      security: []
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions:
+    post:
+      tags: [Sessions]
+      summary: Create interview session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '409':
+          description: User already has active session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}:
+    get:
+      tags: [Sessions]
+      summary: Get session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/start:
+    post:
+      tags: [Sessions]
+      summary: Start session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStateResponse'
+        '400':
+          description: Invalid state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Another active session exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/pause:
+    post:
+      tags: [Sessions]
+      summary: Pause session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Session paused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStateResponse'
+        '400':
+          description: Only in-progress sessions can be paused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/resume:
+    post:
+      tags: [Sessions]
+      summary: Resume session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Session resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStateResponse'
+        '400':
+          description: Invalid state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Another active session exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/cancel:
+    post:
+      tags: [Sessions]
+      summary: Cancel session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Session canceled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStateResponse'
+        '400':
+          description: Invalid state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/messages:
+    get:
+      tags: [Sessions]
+      summary: Session chat history
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size50'
+      responses:
+        '200':
+          description: Message page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageSessionMessageResponse'
+    post:
+      tags: [Sessions]
+      summary: Send answer message
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: User message stored and placeholder interviewer reply returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+        '400':
+          description: Invalid session state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/finish:
+    post:
+      tags: [Sessions]
+      summary: Finish session and start report generation
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Session moved to processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          description: Invalid state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/report:
+    get:
+      tags: [Sessions]
+      summary: Session report
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Report or pending status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+  /history/sessions:
+    get:
+      tags: [Sessions]
+      summary: Session history
+      parameters:
+        - name: state
+          in: query
+          schema:
+            $ref: '#/components/schemas/SessionState'
+        - name: profileId
+          in: query
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: createdFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: createdTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size20'
+      responses:
+        '200':
+          description: Session history page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageSessionResponse'
+  /admin/users:
+    get:
+      tags: [Admin Users]
+      summary: List users
+      parameters:
+        - name: email
+          in: query
+          schema:
+            type: string
+        - name: roleCode
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUserResponse'
+        '403':
+          description: Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /admin/users/{userId}:
+    get:
+      tags: [Admin Users]
+      summary: Get user by id
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserResponse'
+    patch:
+      tags: [Admin Users]
+      summary: Update user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserUpdateRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserResponse'
+  /admin/profiles:
+    post:
+      tags: [Admin Profiles]
+      summary: Create interview profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+      responses:
+        '200':
+          description: Profile created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+  /admin/profiles/{profileId}:
+    patch:
+      tags: [Admin Profiles]
+      summary: Update profile
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+  /admin/profiles/{profileId}/publish:
+    post:
+      tags: [Admin Profiles]
+      summary: Publish profile
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Profile published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+  /admin/profiles/{profileId}/archive:
+    post:
+      tags: [Admin Profiles]
+      summary: Archive profile
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Profile archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+  /admin/questions:
+    get:
+      tags: [Admin Questions]
+      summary: List questions
+      responses:
+        '200':
+          description: Questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuestionResponse'
+    post:
+      tags: [Admin Questions]
+      summary: Create question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+      responses:
+        '200':
+          description: Question created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+  /admin/questions/{questionId}:
+    get:
+      tags: [Admin Questions]
+      summary: Get question by id
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Question
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+    patch:
+      tags: [Admin Questions]
+      summary: Update question
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+      responses:
+        '200':
+          description: Question updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+    delete:
+      tags: [Admin Questions]
+      summary: Delete question
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '204':
+          description: Question deleted
+  /admin/profiles/{profileId}/questions:
+    get:
+      tags: [Admin Profile Questions]
+      summary: List profile question links
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Question links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProfileQuestionResponse'
+    post:
+      tags: [Admin Profile Questions]
+      summary: Add question to profile
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileQuestionRequest'
+      responses:
+        '200':
+          description: Link created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileQuestionResponse'
+  /admin/profiles/{profileId}/questions/{linkId}:
+    patch:
+      tags: [Admin Profile Questions]
+      summary: Update profile question link
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileQuestionRequest'
+      responses:
+        '200':
+          description: Link updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileQuestionResponse'
+    delete:
+      tags: [Admin Profile Questions]
+      summary: Delete profile question link
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '204':
+          description: Link deleted

@@ -22,7 +22,7 @@ export function DashboardPage() {
         eyebrow="Личный кабинет"
         title="Дашборд прогресса"
         description="Метрики из `/progress`, быстрый доступ к истории и активным сценариям."
-        actions={<Link to="/profiles" className="btn btn-primary">Новая тренировка</Link>}
+        actions={<Link to="/app/profiles" className="btn btn-primary">Новая тренировка</Link>}
       />
       <div className="metrics">
         <Card>

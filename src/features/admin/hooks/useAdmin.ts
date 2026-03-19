@@ -8,6 +8,13 @@ export function useAdminUsers(filters: { email?: string; roleCode?: string }) {
   });
 }
 
+export function useAdminProfiles(filters: { page?: number; size?: number } = { page: 0, size: 50 }) {
+  return useQuery({
+    queryKey: ["admin", "profiles", filters],
+    queryFn: () => adminApi.profiles(filters),
+  });
+}
+
 export function useAdminUser(userId?: string) {
   return useQuery({
     queryKey: ["admin", "user", userId],
@@ -45,9 +52,9 @@ export function useAdminProfileEditor(profileId?: string) {
 
   return {
     profileQuery: useQuery({
-      queryKey: ["profiles", profileId],
-      queryFn: async () => undefined,
-      enabled: false,
+      queryKey: ["admin", "profile", profileId],
+      queryFn: () => adminApi.profile(profileId!),
+      enabled: Boolean(profileId),
     }),
     linksQuery: useQuery({
       queryKey: ["admin", "profile-links", profileId],
@@ -58,17 +65,24 @@ export function useAdminProfileEditor(profileId?: string) {
       mutationFn: (payload: Parameters<typeof adminApi.updateProfile>[1]) =>
         profileId ? adminApi.updateProfile(profileId, payload) : adminApi.createProfile(payload),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["profiles"] });
+        queryClient.invalidateQueries({ queryKey: ["admin", "profiles"] });
+        queryClient.invalidateQueries({ queryKey: ["admin", "profile", profileId] });
         queryClient.invalidateQueries({ queryKey: ["admin", "profile-links", profileId] });
       },
     }),
     publishMutation: useMutation({
       mutationFn: () => adminApi.publishProfile(profileId!),
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profiles"] }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["admin", "profiles"] });
+        queryClient.invalidateQueries({ queryKey: ["admin", "profile", profileId] });
+      },
     }),
     archiveMutation: useMutation({
       mutationFn: () => adminApi.archiveProfile(profileId!),
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profiles"] }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["admin", "profiles"] });
+        queryClient.invalidateQueries({ queryKey: ["admin", "profile", profileId] });
+      },
     }),
     addLinkMutation: useMutation({
       mutationFn: ({

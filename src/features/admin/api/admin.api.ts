@@ -2,6 +2,7 @@ import { request } from "@/api";
 import type {
   AdminUserResponse,
   AdminUserUpdateRequest,
+  PageProfileResponse,
   ProfileQuestionRequest,
   ProfileQuestionResponse,
   ProfileRequest,
@@ -15,6 +16,9 @@ export const adminApi = {
   users: (filters: { email?: string; roleCode?: string }) =>
     request<AdminUserResponse[]>("/admin/users", { query: filters }),
   user: (userId: UUID) => request<AdminUserResponse>(`/admin/users/${userId}`),
+  profiles: (filters?: { page?: number; size?: number }) =>
+    request<PageProfileResponse | ProfileResponse[]>("/admin/profiles", { query: filters }),
+  profile: (profileId: UUID) => request<ProfileResponse>(`/admin/profiles/${profileId}`),
   updateUser: (userId: UUID, payload: AdminUserUpdateRequest) =>
     request<AdminUserResponse>(`/admin/users/${userId}`, {
       method: "PATCH",

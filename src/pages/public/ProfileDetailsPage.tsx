@@ -1,18 +1,63 @@
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { sessionsApi } from "@/features/sessions/api/sessions.api";
+import { authStore } from "@/features/auth/hooks/auth-store";
 import { useProfile } from "@/features/profiles/hooks/useProfiles";
+import { HttpError } from "@/shared/lib/error";
 import { formatDateTime } from "@/shared/lib/format";
 import { Badge, Button, Card, ErrorState, Loader, PageHeader } from "@/shared/ui";
 
 export function ProfileDetailsPage() {
   const { profileId } = useParams();
   const navigate = useNavigate();
+  const tokens = authStore((state) => state.tokens);
+  const [showAuthNotice, setShowAuthNotice] = useState(false);
   const profileQuery = useProfile(profileId);
   const createSession = useMutation({
     mutationFn: () => sessionsApi.create({ profileId: profileId! }),
     onSuccess: (session) => navigate(`/app/sessions/${session.id}`),
+    onError: (error) => {
+      if (error instanceof HttpError && (error.status === 401 || error.status === 403)) {
+        setShowAuthNotice(true);
+      }
+    },
   });
+  const isAuthenticated = Boolean(tokens?.accessToken);
+  const isAuthError =
+    createSession.error instanceof HttpError
+    && (createSession.error.status === 401 || createSession.error.status === 403);
+  const shouldShowAuthNotice = showAuthNotice || isAuthError;
+
+  useEffect(() => {
+    if (!shouldShowAuthNotice) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowAuthNotice(false);
+      }
+    };
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [shouldShowAuthNotice]);
+
+  const handleStartInterview = () => {
+    if (!isAuthenticated) {
+      setShowAuthNotice(true);
+      return;
+    }
+
+    createSession.mutate();
+  };
 
   if (profileQuery.isLoading) {
     return <Loader />;
@@ -30,7 +75,7 @@ export function ProfileDetailsPage() {
 
   return (
     <div className="grid">
-      <Link className="ghost-link" to="/profiles">
+      <Link className="ghost-link" to=".." relative="path">
         ← Назад к каталогу
       </Link>
       <Card>
@@ -39,7 +84,7 @@ export function ProfileDetailsPage() {
           title={profile.title ?? "Профиль"}
           description={profile.description ?? "Описание профиля"}
           actions={
-            <Button onClick={() => createSession.mutate()} disabled={createSession.isPending}>
+            <Button onClick={handleStartInterview} disabled={createSession.isPending}>
               Начать собеседование
             </Button>
           }
@@ -55,6 +100,9 @@ export function ProfileDetailsPage() {
           Опубликовано: {formatDateTime(profile.publishedAt)}
         </p>
       </Card>
+      {createSession.isError && !isAuthError ? (
+        <ErrorState error={createSession.error} retry={handleStartInterview} />
+      ) : null}
       <Card>
         <h2>Вопросы в сценарии</h2>
         <div className="list">
@@ -72,6 +120,32 @@ export function ProfileDetailsPage() {
           ))}
         </div>
       </Card>
+      {shouldShowAuthNotice ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setShowAuthNotice(false)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button className="modal-close" type="button" aria-label="Закрыть" onClick={() => setShowAuthNotice(false)}>
+              ×
+            </button>
+            <p className="eyebrow">Требуется регистрация</p>
+            <h3 id="auth-modal-title">Чтобы начать собеседование, нужно создать аккаунт.</h3>
+            <p className="muted">После регистрации вы сможете запускать сессии и сохранять историю прогресса.</p>
+            <div className="inline-actions">
+              <Link to="/register" className="btn btn-primary" onClick={() => setShowAuthNotice(false)}>
+                Зарегистрироваться
+              </Link>
+              <Link to="/login" className="btn btn-secondary" onClick={() => setShowAuthNotice(false)}>
+                Войти
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

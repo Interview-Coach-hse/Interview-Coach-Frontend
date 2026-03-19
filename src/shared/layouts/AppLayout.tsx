@@ -5,7 +5,7 @@ import { Button } from "@/shared/ui/Button";
 const links = [
   { to: "/app/dashboard", label: "Дашборд" },
   { to: "/app/history", label: "История" },
-  { to: "/profiles", label: "Сценарии" },
+  { to: "/app/profiles", label: "Сценарии" },
   { to: "/app/settings", label: "Профиль" },
 ];
 
@@ -13,6 +13,8 @@ export function AppLayout() {
   const navigate = useNavigate();
   const user = authStore((state) => state.user);
   const clearSession = authStore((state) => state.clearSession);
+  const isAdmin = user?.role === "ADMIN" || user?.role === "ROLE_ADMIN";
+  const navLinks = isAdmin ? [...links, { to: "/admin/users", label: "Админка" }] : links;
 
   return (
     <div className="shell">
@@ -21,7 +23,7 @@ export function AppLayout() {
           Interview Coach
         </Link>
         <nav className="topnav">
-          {links.map((link) => (
+          {navLinks.map((link) => (
             <NavLink key={link.to} to={link.to} className="topnav-link">
               {link.label}
             </NavLink>

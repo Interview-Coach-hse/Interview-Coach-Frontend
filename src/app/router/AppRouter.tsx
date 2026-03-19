@@ -46,6 +46,8 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/app/dashboard" replace /> },
           { path: "dashboard", element: <DashboardPage /> },
+          { path: "profiles", element: <ProfilesPage /> },
+          { path: "profiles/:profileId", element: <ProfileDetailsPage /> },
           { path: "history", element: <HistoryPage /> },
           { path: "history/:sessionId", element: <SessionHistoryDetailPage /> },
           { path: "sessions/:sessionId", element: <SessionDetailPage /> },
@@ -65,6 +67,7 @@ const router = createBrowserRouter([
               { path: "users/:userId", element: <AdminUserDetailPage /> },
               { path: "questions", element: <AdminQuestionsPage /> },
               { path: "profiles", element: <AdminProfilesPage /> },
+              { path: "profiles/new", element: <AdminProfileEditPage /> },
               { path: "profiles/:profileId/edit", element: <AdminProfileEditPage /> },
             ],
           },

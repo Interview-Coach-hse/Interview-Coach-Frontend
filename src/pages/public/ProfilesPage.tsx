@@ -78,7 +78,7 @@ export function ProfilesPage() {
                 </div>
                 <div className="inline-actions">
                   <Badge tone="accent">{profile.level ?? "—"}</Badge>
-                  <Link to={`/profiles/${profile.id}`} className="btn btn-primary">
+                  <Link to={profile.id ?? ""} className="btn btn-primary">
                     Открыть
                   </Link>
                 </div>

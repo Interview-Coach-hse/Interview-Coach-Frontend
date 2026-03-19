@@ -3,8 +3,7 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { z } from "zod";
-import { adminApi } from "@/features/admin/api/admin.api";
-import { useProfile } from "@/features/profiles/hooks/useProfiles";
+import { useAdminProfileEditor } from "@/features/admin/hooks/useAdmin";
 import { InterviewDirection, InterviewLevel } from "@/api/generated/schema";
 import { directionOptions, levelOptions } from "@/shared/lib/options";
 import { Badge, Button, Card, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
@@ -19,7 +18,7 @@ const schema = z.object({
 
 export function AdminProfileEditPage() {
   const { profileId } = useParams();
-  const profileQuery = useProfile(profileId);
+  const { profileQuery, saveMutation, publishMutation, archiveMutation } = useAdminProfileEditor(profileId);
   const defaults = useMemo(
     () => ({
       title: profileQuery.data?.title ?? "",
@@ -45,7 +44,7 @@ export function AdminProfileEditPage() {
 
   return (
     <div className="grid">
-      <PageHeader eyebrow="Admin Content" title="Редактирование профиля" description="TODO: OpenAPI не содержит endpoint списка/деталей профилей в admin-зоне, поэтому используется public detail как временный источник данных." />
+      <PageHeader eyebrow="Admin Content" title="Редактирование профиля" />
       <Card>
         <form
           onSubmit={handleSubmit(async (values) => {
@@ -53,12 +52,7 @@ export function AdminProfileEditPage() {
               ...values,
               tags: values.tags?.split(",").map((item) => item.trim()).filter(Boolean),
             };
-
-            if (profileId) {
-              await adminApi.updateProfile(profileId, payload);
-            } else {
-              await adminApi.createProfile(payload);
-            }
+            await saveMutation.mutateAsync(payload);
           })}
         >
           <Input label="Название" {...register("title")} />
@@ -69,12 +63,25 @@ export function AdminProfileEditPage() {
           </div>
           <Input label="Теги через запятую" {...register("tags")} />
           <div className="inline-actions">
-            <Button type="submit">Сохранить</Button>
-            {profileId ? <Button type="button" variant="secondary" onClick={() => adminApi.publishProfile(profileId)}>Опубликовать</Button> : null}
-            {profileId ? <Button type="button" variant="ghost" onClick={() => adminApi.archiveProfile(profileId)}>Архивировать</Button> : null}
+            <Button type="submit" disabled={saveMutation.isPending}>
+              Сохранить
+            </Button>
+            {profileId ? (
+              <Button type="button" variant="secondary" disabled={publishMutation.isPending} onClick={() => publishMutation.mutate()}>
+                Опубликовать
+              </Button>
+            ) : null}
+            {profileId ? (
+              <Button type="button" variant="ghost" disabled={archiveMutation.isPending} onClick={() => archiveMutation.mutate()}>
+                Архивировать
+              </Button>
+            ) : null}
           </div>
         </form>
       </Card>
+      {saveMutation.isError ? <ErrorState error={saveMutation.error} /> : null}
+      {publishMutation.isError ? <ErrorState error={publishMutation.error} /> : null}
+      {archiveMutation.isError ? <ErrorState error={archiveMutation.error} /> : null}
       {profileQuery.data?.questions?.length ? (
         <Card>
           <h2>Profile-question links</h2>

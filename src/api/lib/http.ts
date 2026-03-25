@@ -10,7 +10,9 @@ type RequestOptions = RequestInit & {
 };
 
 function buildUrl(path: string, query?: RequestOptions["query"]) {
-  const url = new URL(path, env.apiBaseUrl);
+  const baseUrl = env.apiBaseUrl.endsWith("/") ? env.apiBaseUrl : `${env.apiBaseUrl}/`;
+  const normalizedPath = path.replace(/^\/+/, "");
+  const url = new URL(normalizedPath, baseUrl);
 
   if (query) {
     for (const [key, value] of Object.entries(query)) {

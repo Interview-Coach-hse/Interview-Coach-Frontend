@@ -4,6 +4,7 @@ export type AppError = {
   title: string;
   message: string;
   status?: number;
+  code?: string | null;
   fields?: Record<string, string>;
 };
 
@@ -31,10 +32,21 @@ export class HttpError extends Error {
 
 export function normalizeError(error: unknown): AppError {
   if (error instanceof HttpError) {
+    if (error.payload?.code === "ASSESSMENT_SERVICE_UNAVAILABLE") {
+      return {
+        title: "Сервис оценки недоступен",
+        message: error.payload.message ?? "Внешний assessment service временно недоступен. Повторите позже.",
+        status: error.status,
+        code: error.payload.code,
+        fields: error.payload.errors,
+      };
+    }
+
     return {
       title: `Ошибка ${error.status}`,
       message: error.payload?.message ?? error.message,
       status: error.status,
+      code: error.payload?.code,
       fields: error.payload?.errors,
     };
   }

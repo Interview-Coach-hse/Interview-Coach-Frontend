@@ -60,6 +60,9 @@ components:
           type: integer
         error:
           type: string
+        code:
+          type: string
+          nullable: true
         message:
           type: string
         errors:
@@ -86,7 +89,10 @@ components:
       enum: [ACTIVE, DISABLED]
     SessionState:
       type: string
-      enum: [CREATED, IN_PROGRESS, PAUSED, FINISHED, PROCESSING, REPORT_READY, FAILED, CANCELED]
+      description: |
+        Session lifecycle state. Successful report generation ends with `FINISHED`.
+        `PROCESSING` means the final report is being generated.
+      enum: [CREATED, IN_PROGRESS, PAUSED, FINISHED, PROCESSING, FAILED, CANCELED]
     SenderType:
       type: string
       enum: [USER, INTERVIEWER, SYSTEM]
@@ -943,6 +949,7 @@ paths:
     post:
       tags: [Sessions]
       summary: Start session
+      description: Starts the session and, for an empty dialog, requests the first interviewer prompt.
       parameters:
         - name: sessionId
           in: path
@@ -968,6 +975,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: External assessment service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-03-24T12:00:00'
+                status: 503
+                error: Service Unavailable
+                code: ASSESSMENT_SERVICE_UNAVAILABLE
+                message: External assessment service is unavailable. Please try again later.
   /sessions/{sessionId}/pause:
     post:
       tags: [Sessions]
@@ -1065,6 +1084,7 @@ paths:
     post:
       tags: [Sessions]
       summary: Send answer message
+      description: Stores the user answer and requests the next interviewer prompt.
       parameters:
         - name: sessionId
           in: path
@@ -1090,10 +1110,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: External assessment service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-03-24T12:00:00'
+                status: 503
+                error: Service Unavailable
+                code: ASSESSMENT_SERVICE_UNAVAILABLE
+                message: External assessment service is unavailable. Please try again later.
   /sessions/{sessionId}/finish:
     post:
       tags: [Sessions]
       summary: Finish session and start report generation
+      description: Finishes the dialog, starts report generation and returns the session in `PROCESSING` or a terminal error.
       parameters:
         - name: sessionId
           in: path
@@ -1113,6 +1146,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: External assessment service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-03-24T12:00:00'
+                status: 503
+                error: Service Unavailable
+                code: ASSESSMENT_SERVICE_UNAVAILABLE
+                message: External assessment service is unavailable. Please try again later.
   /sessions/{sessionId}/report:
     get:
       tags: [Sessions]

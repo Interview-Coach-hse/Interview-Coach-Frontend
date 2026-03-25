@@ -40,7 +40,6 @@ export enum SessionState {
   Paused = "PAUSED",
   Finished = "FINISHED",
   Processing = "PROCESSING",
-  ReportReady = "REPORT_READY",
   Failed = "FAILED",
   Canceled = "CANCELED",
 }
@@ -75,6 +74,7 @@ export type ErrorResponse = {
   timestamp: string;
   status: number;
   error: string;
+  code?: string | null;
   message: string;
   errors?: Record<string, string>;
 };

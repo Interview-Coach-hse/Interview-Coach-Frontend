@@ -26,6 +26,39 @@ Build:
 npm run build
 ```
 
+## Production Docker image
+
+```bash
+docker build -t interview-coach-frontend:latest .
+```
+
+The image serves the built app with `nginx` on port `80`.
+
+## Kubernetes
+
+Raw manifests are in [k8s](/Users/sir/Desktop/Diplom/project/Interview-Coach-Frontend/k8s).
+
+## Helm
+
+Chart is in [helm/interview-coach-frontend](/Users/sir/Desktop/Diplom/project/Interview-Coach-Frontend/helm/interview-coach-frontend).
+
+Install:
+
+```bash
+helm upgrade --install interview-coach-frontend ./helm/interview-coach-frontend
+```
+
+Override image and backend URL:
+
+```bash
+helm upgrade --install interview-coach-frontend ./helm/interview-coach-frontend \
+  --set image.repository=your-registry/interview-coach-frontend \
+  --set image.tag=latest \
+  --set runtimeConfig.apiBaseUrl=http://interview-coach-backend.default.svc.cluster.local:8080
+```
+
+The frontend runtime config is rendered into `ConfigMap` key `app-config.js`, so `apiBaseUrl` can be changed without rebuilding the image.
+
 ## Docker Compose
 
 For simple dev startup:

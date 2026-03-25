@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { Button } from "@/shared/ui";
 
 const links = [
   { to: "/admin/users", label: "Пользователи" },
@@ -20,6 +21,13 @@ export function AdminLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="topbar-actions">
+          <Link to="/app/dashboard">
+            <Button variant="ghost" type="button">
+              В приложение
+            </Button>
+          </Link>
+        </div>
       </header>
       <main className="page">
         <Outlet />

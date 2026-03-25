@@ -25,9 +25,8 @@ export const sessionStateOptions = [
   { value: SessionState.Created, label: "Создана" },
   { value: SessionState.InProgress, label: "В процессе" },
   { value: SessionState.Paused, label: "На паузе" },
-  { value: SessionState.Finished, label: "Завершена" },
+  { value: SessionState.Finished, label: "Завершена / отчет готов" },
   { value: SessionState.Processing, label: "Готовится отчет" },
-  { value: SessionState.ReportReady, label: "Отчет готов" },
   { value: SessionState.Canceled, label: "Отменена" },
   { value: SessionState.Failed, label: "Ошибка" },
 ];

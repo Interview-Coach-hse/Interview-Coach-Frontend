@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { InterviewDirection, InterviewLevel, QuestionStatus, QuestionType } from "@/api/generated/schema";
 import { useAdminQuestions } from "@/features/admin/hooks/useAdmin";
 import { directionOptions, levelOptions, questionStatusOptions, questionTypeOptions } from "@/shared/lib/options";
-import { Button, Card, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
+import { Button, Card, ErrorState, Loader, PageHeader, Select, Textarea } from "@/shared/ui";
 
 const schema = z.object({
   text: z.string().min(10, "Минимум 10 символов"),
@@ -15,16 +16,34 @@ const schema = z.object({
 });
 
 export function AdminQuestionsPage() {
-  const { listQuery, createMutation, deleteMutation } = useAdminQuestions();
-  const { register, handleSubmit, reset } = useForm<z.infer<typeof schema>>({
+  const { listQuery, createMutation, updateMutation, deleteMutation } = useAdminQuestions();
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
+      text: "",
       questionType: QuestionType.Technical,
       difficulty: InterviewLevel.Junior,
       direction: InterviewDirection.Backend,
       status: QuestionStatus.Active,
     },
   });
+
+  const resetForm = () => {
+    setEditingQuestionId(null);
+    reset({
+      text: "",
+      questionType: QuestionType.Technical,
+      difficulty: InterviewLevel.Junior,
+      direction: InterviewDirection.Backend,
+      status: QuestionStatus.Active,
+    });
+  };
 
   if (listQuery.isLoading) {
     return <Loader />;
@@ -40,20 +59,42 @@ export function AdminQuestionsPage() {
       <Card>
         <form
           onSubmit={handleSubmit(async (values) => {
-            await createMutation.mutateAsync(values);
-            reset();
+            if (editingQuestionId) {
+              await updateMutation.mutateAsync({ id: editingQuestionId, payload: values });
+            } else {
+              await createMutation.mutateAsync(values);
+            }
+
+            resetForm();
           })}
         >
-          <Input label="Текст вопроса" {...register("text")} />
+          <Textarea label="Текст вопроса" error={errors.text?.message} rows={4} {...register("text")} />
           <div className="grid grid-2">
-            <Select label="Тип" options={questionTypeOptions} {...register("questionType")} />
-            <Select label="Уровень" options={levelOptions.filter((item) => item.value)} {...register("difficulty")} />
-            <Select label="Направление" options={directionOptions.filter((item) => item.value)} {...register("direction")} />
-            <Select label="Статус" options={questionStatusOptions} {...register("status")} />
+            <Select label="Тип" error={errors.questionType?.message} options={questionTypeOptions} {...register("questionType")} />
+            <Select
+              label="Уровень"
+              error={errors.difficulty?.message}
+              options={levelOptions.filter((item) => item.value)}
+              {...register("difficulty")}
+            />
+            <Select
+              label="Направление"
+              error={errors.direction?.message}
+              options={directionOptions.filter((item) => item.value)}
+              {...register("direction")}
+            />
+            <Select label="Статус" error={errors.status?.message} options={questionStatusOptions} {...register("status")} />
           </div>
-          <Button type="submit" disabled={createMutation.isPending}>
-            Добавить вопрос
-          </Button>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+              {editingQuestionId ? "Сохранить изменения" : "Добавить вопрос"}
+            </Button>
+            {editingQuestionId ? (
+              <Button type="button" variant="secondary" onClick={resetForm}>
+                Отмена
+              </Button>
+            ) : null}
+          </div>
         </form>
       </Card>
       <Card>
@@ -73,9 +114,27 @@ export function AdminQuestionsPage() {
                 <td>{item.questionType}</td>
                 <td>{item.difficulty}</td>
                 <td>
-                  <Button variant="ghost" onClick={() => deleteMutation.mutate(item.id!)}>
-                    Удалить
-                  </Button>
+                  <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={() => {
+                        setEditingQuestionId(item.id!);
+                        reset({
+                          text: item.text ?? "",
+                          questionType: item.questionType ?? QuestionType.Technical,
+                          difficulty: item.difficulty ?? InterviewLevel.Junior,
+                          direction: item.direction ?? InterviewDirection.Backend,
+                          status: item.status ?? QuestionStatus.Active,
+                        });
+                      }}
+                    >
+                      Редактировать
+                    </Button>
+                    <Button variant="ghost" type="button" onClick={() => deleteMutation.mutate(item.id!)}>
+                      Удалить
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

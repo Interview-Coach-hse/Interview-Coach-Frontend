@@ -54,7 +54,7 @@ export function useAdminProfileEditor(profileId?: string) {
   return {
     profileQuery: useQuery({
       queryKey: ["admin", "profile", profileId],
-      queryFn: () => profilesApi.detail(profileId!),
+      queryFn: () => adminApi.profile(profileId!),
       enabled: Boolean(profileId),
     }),
     linksQuery: useQuery({

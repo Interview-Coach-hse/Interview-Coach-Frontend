@@ -15,6 +15,7 @@ export const adminApi = {
   users: (filters: { email?: string; roleCode?: string }) =>
     request<AdminUserResponse[]>("/admin/users", { query: filters }),
   user: (userId: UUID) => request<AdminUserResponse>(`/admin/users/${userId}`),
+  profile: (profileId: UUID) => request<ProfileResponse>(`/admin/profiles/${profileId}`),
   updateUser: (userId: UUID, payload: AdminUserUpdateRequest) =>
     request<AdminUserResponse>(`/admin/users/${userId}`, {
       method: "PATCH",

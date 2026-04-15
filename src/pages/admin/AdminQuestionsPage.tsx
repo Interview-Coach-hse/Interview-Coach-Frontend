@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -19,10 +19,12 @@ export function AdminQuestionsPage() {
   const { listQuery, createMutation, updateMutation, deleteMutation } = useAdminQuestions();
   const { showToast } = useToast();
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
   const {
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors },
   } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -58,7 +60,11 @@ export function AdminQuestionsPage() {
     <div className="grid">
       <PageHeader eyebrow="Admin Content" title="Вопросы" />
       <Card>
+        <p className="muted" style={{ marginBottom: "1rem" }}>
+          {editingQuestionId ? "Режим редактирования вопроса" : "Создание нового вопроса"}
+        </p>
         <form
+          ref={formRef}
           onSubmit={handleSubmit(async (values) => {
             if (editingQuestionId) {
               await updateMutation.mutateAsync({ id: editingQuestionId, payload: values });
@@ -122,7 +128,12 @@ export function AdminQuestionsPage() {
                       variant="ghost"
                       type="button"
                       onClick={() => {
-                        setEditingQuestionId(item.id!);
+                        if (!item.id) {
+                          showToast("Не удалось открыть вопрос для редактирования");
+                          return;
+                        }
+
+                        setEditingQuestionId(item.id);
                         reset({
                           text: item.text ?? "",
                           questionType: item.questionType ?? QuestionType.Technical,
@@ -130,6 +141,11 @@ export function AdminQuestionsPage() {
                           direction: item.direction ?? InterviewDirection.Backend,
                           status: item.status ?? QuestionStatus.Active,
                         });
+                        formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        window.setTimeout(() => {
+                          setFocus("text");
+                        }, 0);
+                        showToast("Вопрос загружен в форму");
                       }}
                     >
                       Редактировать

@@ -467,11 +467,20 @@ h2 {
 }
 
 .message-bubble {
+  min-width: 0;
   max-width: min(720px, 92%);
   padding: 1rem;
   border-radius: 22px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.message-bubble p:last-child {
+  margin-bottom: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .message-bubble.user {
@@ -489,6 +498,29 @@ h2 {
   background: rgba(8, 17, 31, 0.94);
   border: 1px solid var(--border);
   backdrop-filter: blur(14px);
+}
+
+.session-page {
+  padding-bottom: 14rem;
+}
+
+.session-composer {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 25;
+  width: min(1200px, calc(100% - 2rem));
+  transform: translateX(-50%);
+}
+
+.session-composer .field {
+  margin-bottom: 0;
+}
+
+.session-composer-input {
+  min-height: 88px;
+  max-height: 200px;
+  resize: vertical;
 }
 
 .data-table {
@@ -682,5 +714,14 @@ h2 {
 
   .message-bubble {
     max-width: 100%;
+  }
+
+  .session-page {
+    padding-bottom: 15rem;
+  }
+
+  .session-composer {
+    width: calc(100% - 1rem);
+    bottom: 0.5rem;
   }
 }

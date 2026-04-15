@@ -13,9 +13,6 @@ const schema = z.object({
   lastName: z.string().optional(),
   preferredDirection: z.string().optional(),
   preferredLevel: z.string().optional(),
-  preferredLanguage: z.string().optional(),
-  interfaceLanguage: z.string().optional(),
-  theme: z.string().optional(),
 });
 
 export function SettingsPage() {
@@ -34,9 +31,6 @@ export function SettingsPage() {
         lastName: query.data.lastName ?? "",
         preferredDirection: query.data.preference?.preferredDirection ?? "",
         preferredLevel: query.data.preference?.preferredLevel ?? "",
-        preferredLanguage: query.data.preference?.preferredLanguage ?? "ru",
-        interfaceLanguage: query.data.preference?.interfaceLanguage ?? "ru",
-        theme: query.data.preference?.theme ?? "neon-night",
       });
     }
   }, [query.data, reset]);
@@ -56,10 +50,7 @@ export function SettingsPage() {
             <Input label="Фамилия" {...register("lastName")} />
             <Select label="Предпочтительное направление" options={directionOptions} {...register("preferredDirection")} />
             <Select label="Предпочтительный уровень" options={levelOptions} {...register("preferredLevel")} />
-            <Input label="Язык интервью" {...register("preferredLanguage")} />
-            <Input label="Язык UI" {...register("interfaceLanguage")} />
           </div>
-          <Input label="Тема" {...register("theme")} />
           <div className="inline-actions">
             <Button type="submit" disabled={updateMutation.isPending}>
               Сохранить

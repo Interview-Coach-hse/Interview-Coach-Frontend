@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SessionState } from "@/api/generated/schema";
 import { useSession } from "@/features/sessions/hooks/useSession";
-import { Button, Card, ErrorState, Input, Loader, PageHeader } from "@/shared/ui";
+import { Button, Card, ErrorState, Loader, PageHeader, Textarea } from "@/shared/ui";
 
 export function SessionDetailPage() {
   const { sessionId } = useParams();
@@ -57,7 +57,7 @@ export function SessionDetailPage() {
   }
 
   return (
-    <div className="grid">
+    <div className="grid session-page">
       <PageHeader
         eyebrow="Live Session"
         title={sessionQuery.data?.profileTitle ?? "Сессия"}
@@ -90,9 +90,11 @@ export function SessionDetailPage() {
           ))}
         </div>
       </Card>
-      <div className="sticky-composer">
-        <Input
+      <div className="sticky-composer session-composer">
+        <Textarea
           label="Ваш ответ"
+          className="session-composer-input"
+          rows={3}
           placeholder={
             isPaused
               ? "Сессия на паузе. Нажмите «Возобновить», чтобы продолжить."
@@ -105,6 +107,9 @@ export function SessionDetailPage() {
           disabled={isLocked}
           onChange={(event) => setMessage(event.target.value)}
         />
+        <div className="inline-actions">
+          <span className="muted">{message.length}/4000</span>
+        </div>
         <div className="inline-actions">
           <Button
             onClick={() =>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { SessionState } from "@/api/generated/schema";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { Button, Card, ErrorState, Input, Loader, PageHeader } from "@/shared/ui";
 
@@ -13,6 +14,9 @@ export function SessionDetailPage() {
 
   const state = sessionQuery.data?.state;
   const hasMessages = Boolean(messagesQuery.data?.items?.length);
+  const isInProgress = state === SessionState.InProgress;
+  const isPaused = state === SessionState.Paused;
+  const isLocked = !isInProgress;
 
   useEffect(() => {
     autoStartAttemptedRef.current = false;
@@ -89,9 +93,16 @@ export function SessionDetailPage() {
       <div className="sticky-composer">
         <Input
           label="Ваш ответ"
-          placeholder="Введите ответ до 4000 символов"
+          placeholder={
+            isPaused
+              ? "Сессия на паузе. Нажмите «Возобновить», чтобы продолжить."
+              : isInProgress
+                ? "Введите ответ до 4000 символов"
+                : "Отправка ответа доступна только во время активной сессии."
+          }
           value={message}
           maxLength={4000}
+          disabled={isLocked}
           onChange={(event) => setMessage(event.target.value)}
         />
         <div className="inline-actions">
@@ -101,7 +112,7 @@ export function SessionDetailPage() {
                 onSuccess: () => setMessage(""),
               })
             }
-            disabled={!message.trim() || sendMessageMutation.isPending}
+            disabled={isLocked || !message.trim() || sendMessageMutation.isPending}
           >
             Отправить
           </Button>

@@ -18,6 +18,22 @@ export function HistoryPage() {
   });
   const query = useHistory(filters);
 
+  const getSessionLink = (sessionId?: string, state?: SessionState) => {
+    if (!sessionId) {
+      return "/app/history";
+    }
+
+    if (
+      state === SessionState.Created ||
+      state === SessionState.InProgress ||
+      state === SessionState.Paused
+    ) {
+      return `/app/sessions/${sessionId}`;
+    }
+
+    return `/app/history/${sessionId}`;
+  };
+
   return (
     <div className="grid">
       <PageHeader eyebrow="Session Archive" title="История сессий" />
@@ -60,7 +76,7 @@ export function HistoryPage() {
             </div>
             <div className="inline-actions">
               <Badge tone="accent">{session.state ?? "—"}</Badge>
-              <Link to={`/app/history/${session.id}`} className="btn btn-secondary">
+              <Link to={getSessionLink(session.id, session.state)} className="btn btn-secondary">
                 Открыть
               </Link>
             </div>

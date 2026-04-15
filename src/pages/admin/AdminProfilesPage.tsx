@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { InterviewDirection, InterviewLevel } from "@/api/generated/schema";
 import type { ProfilesFilters } from "@/features/profiles/api/profiles.api";
 import { useAdminProfiles } from "@/features/admin/hooks/useAdmin";
+import { formatDateTime } from "@/shared/lib/format";
 import { directionOptions, levelOptions } from "@/shared/lib/options";
 import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
@@ -90,6 +91,10 @@ export function AdminProfilesPage() {
                 <p className="eyebrow">{profile.direction}</p>
                 <h3>{profile.title}</h3>
                 <p className="muted">{profile.description}</p>
+                <p className="muted">
+                  Вопросов: {profile.questions?.length ?? 0}
+                  {profile.publishedAt ? ` • Опубликовано: ${formatDateTime(profile.publishedAt)}` : ""}
+                </p>
                 <div className="tag-row">
                   {profile.tags?.map((tag) => (
                     <Badge key={tag}>{tag}</Badge>

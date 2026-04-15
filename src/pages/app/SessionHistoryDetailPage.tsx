@@ -1,11 +1,24 @@
-import { Link, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { SessionState } from "@/api/generated/schema";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { formatDateTime } from "@/shared/lib/format";
 import { Badge, Card, ErrorState, Loader, PageHeader } from "@/shared/ui";
 
 export function SessionHistoryDetailPage() {
   const { sessionId } = useParams();
+  const navigate = useNavigate();
   const { sessionQuery, messagesQuery } = useSession(sessionId);
+  const state = sessionQuery.data?.state;
+
+  useEffect(() => {
+    if (
+      sessionId &&
+      (state === SessionState.Created || state === SessionState.InProgress || state === SessionState.Paused)
+    ) {
+      navigate(`/app/sessions/${sessionId}`, { replace: true });
+    }
+  }, [navigate, sessionId, state]);
 
   if (sessionQuery.isLoading || messagesQuery.isLoading) {
     return <Loader />;
@@ -13,6 +26,10 @@ export function SessionHistoryDetailPage() {
 
   if (sessionQuery.isError) {
     return <ErrorState error={sessionQuery.error} retry={() => sessionQuery.refetch()} />;
+  }
+
+  if (state === SessionState.Created || state === SessionState.InProgress || state === SessionState.Paused) {
+    return <Loader label="Возвращаем вас в активную сессию..." />;
   }
 
   return (

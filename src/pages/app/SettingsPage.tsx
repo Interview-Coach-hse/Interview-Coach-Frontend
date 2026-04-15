@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useCurrentUser } from "@/features/user/hooks/useCurrentUser";
 import { directionOptions, levelOptions } from "@/shared/lib/options";
-import { Button, Card, Input, PageHeader, Select } from "@/shared/ui";
+import { Button, Card, Input, PageHeader, Select, useToast } from "@/shared/ui";
 
 const schema = z.object({
   firstName: z.string().optional(),
@@ -18,6 +18,7 @@ const schema = z.object({
 
 export function SettingsPage() {
   const { query, updateMutation } = useCurrentUser();
+  const { showToast } = useToast();
   const { register, handleSubmit, reset } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
   });
@@ -40,7 +41,12 @@ export function SettingsPage() {
     <div className="grid">
       <PageHeader eyebrow="User Preferences" title="Настройки профиля" />
       <Card>
-        <form onSubmit={handleSubmit((values) => updateMutation.mutate(values as Parameters<typeof updateMutation.mutate>[0]))}>
+        <form
+          onSubmit={handleSubmit(async (values) => {
+            await updateMutation.mutateAsync(values as Parameters<typeof updateMutation.mutate>[0]);
+            showToast("Профиль сохранён");
+          })}
+        >
           <div className="grid grid-2">
             <Input label="Имя" {...register("firstName")} />
             <Input label="Фамилия" {...register("lastName")} />

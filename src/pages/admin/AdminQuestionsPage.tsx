@@ -5,7 +5,7 @@ import { z } from "zod";
 import { InterviewDirection, InterviewLevel, QuestionStatus, QuestionType } from "@/api/generated/schema";
 import { useAdminQuestions } from "@/features/admin/hooks/useAdmin";
 import { directionOptions, levelOptions, questionStatusOptions, questionTypeOptions } from "@/shared/lib/options";
-import { Button, Card, ErrorState, Loader, PageHeader, Select, Textarea } from "@/shared/ui";
+import { Button, Card, ErrorState, Loader, PageHeader, Select, Textarea, useToast } from "@/shared/ui";
 
 const schema = z.object({
   text: z.string().min(10, "Минимум 10 символов"),
@@ -17,6 +17,7 @@ const schema = z.object({
 
 export function AdminQuestionsPage() {
   const { listQuery, createMutation, updateMutation, deleteMutation } = useAdminQuestions();
+  const { showToast } = useToast();
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const {
     register,
@@ -61,8 +62,10 @@ export function AdminQuestionsPage() {
           onSubmit={handleSubmit(async (values) => {
             if (editingQuestionId) {
               await updateMutation.mutateAsync({ id: editingQuestionId, payload: values });
+              showToast("Вопрос обновлён");
             } else {
               await createMutation.mutateAsync(values);
+              showToast("Вопрос добавлен");
             }
 
             resetForm();
@@ -131,7 +134,14 @@ export function AdminQuestionsPage() {
                     >
                       Редактировать
                     </Button>
-                    <Button variant="ghost" type="button" onClick={() => deleteMutation.mutate(item.id!)}>
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={async () => {
+                        await deleteMutation.mutateAsync(item.id!);
+                        showToast("Вопрос удалён");
+                      }}
+                    >
                       Удалить
                     </Button>
                   </div>

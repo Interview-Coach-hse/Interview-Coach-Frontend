@@ -240,6 +240,10 @@ components:
         code:
           type: string
           nullable: true
+        auth:
+          allOf:
+            - $ref: '#/components/schemas/AuthResponse'
+          nullable: true
     AuthResponse:
       type: object
       required: [accessToken, refreshToken, tokenType, expiresIn, user]
@@ -325,7 +329,7 @@ components:
           type: integer
         required:
           type: boolean
-          default: false
+          default: true
     QuestionRequest:
       type: object
       required: [text, questionType]

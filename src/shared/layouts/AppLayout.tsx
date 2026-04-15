@@ -6,7 +6,6 @@ const links = [
   { to: "/app/dashboard", label: "Дашборд" },
   { to: "/app/history", label: "История" },
   { to: "/app/profiles", label: "Сценарии" },
-  { to: "/app/settings", label: "Профиль" },
 ];
 
 export function AppLayout() {
@@ -30,7 +29,9 @@ export function AppLayout() {
           ))}
         </nav>
         <div className="topbar-actions">
-          <span className="user-chip">{user?.email ?? "User"}</span>
+          <NavLink to="/app/settings" className="user-chip">
+            {user?.email ?? "User"}
+          </NavLink>
           <Button
             variant="ghost"
             onClick={() => {

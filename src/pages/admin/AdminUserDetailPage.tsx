@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
@@ -6,7 +7,7 @@ import { z } from "zod";
 import { adminApi } from "@/features/admin/api/admin.api";
 import { useAdminUser } from "@/features/admin/hooks/useAdmin";
 import { directionOptions, levelOptions, userStatusOptions } from "@/shared/lib/options";
-import { Button, Card, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
+import { Button, Card, ErrorState, Input, Loader, PageHeader, Select, useToast } from "@/shared/ui";
 
 const schema = z.object({
   email: z.string().email(),
@@ -21,8 +22,17 @@ const schema = z.object({
 export function AdminUserDetailPage() {
   const { userId } = useParams();
   const query = useAdminUser(userId);
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { register, handleSubmit, reset } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
+  });
+  const updateUserMutation = useMutation({
+    mutationFn: (values: Parameters<typeof adminApi.updateUser>[1]) => adminApi.updateUser(userId!, values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
   });
 
   useEffect(() => {
@@ -51,7 +61,12 @@ export function AdminUserDetailPage() {
     <div className="grid">
       <PageHeader eyebrow="Admin User" title={query.data?.email ?? "Пользователь"} />
       <Card>
-        <form onSubmit={handleSubmit((values) => adminApi.updateUser(userId!, values as Parameters<typeof adminApi.updateUser>[1]))}>
+        <form
+          onSubmit={handleSubmit(async (values) => {
+            await updateUserMutation.mutateAsync(values as Parameters<typeof adminApi.updateUser>[1]);
+            showToast("Пользователь сохранён");
+          })}
+        >
           <div className="grid grid-2">
             <Input label="Email" {...register("email")} />
             <Input label="Роль" {...register("roleCode")} />
@@ -61,9 +76,10 @@ export function AdminUserDetailPage() {
             <Select label="Направление" options={directionOptions} {...register("preferredDirection")} />
             <Select label="Уровень" options={levelOptions} {...register("preferredLevel")} />
           </div>
-          <Button type="submit">Сохранить</Button>
+          <Button type="submit" disabled={updateUserMutation.isPending}>Сохранить</Button>
         </form>
       </Card>
+      {updateUserMutation.isError ? <ErrorState error={updateUserMutation.error} /> : null}
     </div>
   );
 }

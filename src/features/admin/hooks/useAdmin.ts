@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/features/admin/api/admin.api";
+import { profilesApi, type ProfilesFilters } from "@/features/profiles/api/profiles.api";
 
 export function useAdminUsers(filters: { email?: string; roleCode?: string }) {
   return useQuery({
@@ -8,10 +9,10 @@ export function useAdminUsers(filters: { email?: string; roleCode?: string }) {
   });
 }
 
-export function useAdminProfiles(filters: { page?: number; size?: number } = { page: 0, size: 50 }) {
+export function useAdminProfiles(filters: ProfilesFilters = { page: 0, size: 50 }) {
   return useQuery({
     queryKey: ["admin", "profiles", filters],
-    queryFn: () => adminApi.profiles(filters),
+    queryFn: () => profilesApi.list(filters),
   });
 }
 
@@ -53,13 +54,17 @@ export function useAdminProfileEditor(profileId?: string) {
   return {
     profileQuery: useQuery({
       queryKey: ["admin", "profile", profileId],
-      queryFn: () => adminApi.profile(profileId!),
+      queryFn: () => profilesApi.detail(profileId!),
       enabled: Boolean(profileId),
     }),
     linksQuery: useQuery({
       queryKey: ["admin", "profile-links", profileId],
       queryFn: () => adminApi.profileQuestions(profileId!),
       enabled: Boolean(profileId),
+    }),
+    questionsQuery: useQuery({
+      queryKey: ["admin", "questions", "options"],
+      queryFn: adminApi.questions,
     }),
     saveMutation: useMutation({
       mutationFn: (payload: Parameters<typeof adminApi.updateProfile>[1]) =>
@@ -92,6 +97,20 @@ export function useAdminProfileEditor(profileId?: string) {
         profileId: string;
         payload: Parameters<typeof adminApi.addProfileQuestion>[1];
       }) => adminApi.addProfileQuestion(targetProfileId, payload),
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "profile-links", profileId] }),
+    }),
+    updateLinkMutation: useMutation({
+      mutationFn: ({
+        linkId,
+        payload,
+      }: {
+        linkId: string;
+        payload: Parameters<typeof adminApi.updateProfileQuestion>[2];
+      }) => adminApi.updateProfileQuestion(profileId!, linkId, payload),
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "profile-links", profileId] }),
+    }),
+    deleteLinkMutation: useMutation({
+      mutationFn: (linkId: string) => adminApi.deleteProfileQuestion(profileId!, linkId),
       onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "profile-links", profileId] }),
     }),
   };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { Button, Card, ErrorState, Input, Loader, PageHeader } from "@/shared/ui";
@@ -7,8 +7,25 @@ export function SessionDetailPage() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
+  const autoStartAttemptedRef = useRef(false);
   const { sessionQuery, messagesQuery, startMutation, pauseMutation, resumeMutation, cancelMutation, finishMutation, sendMessageMutation } =
     useSession(sessionId);
+
+  const state = sessionQuery.data?.state;
+  const hasMessages = Boolean(messagesQuery.data?.items?.length);
+
+  useEffect(() => {
+    autoStartAttemptedRef.current = false;
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (state !== "CREATED" || hasMessages || startMutation.isPending || autoStartAttemptedRef.current) {
+      return;
+    }
+
+    autoStartAttemptedRef.current = true;
+    startMutation.mutate();
+  }, [hasMessages, startMutation, state]);
 
   if (sessionQuery.isLoading || messagesQuery.isLoading) {
     return <Loader />;
@@ -18,7 +35,22 @@ export function SessionDetailPage() {
     return <ErrorState error={sessionQuery.error ?? messagesQuery.error} />;
   }
 
-  const state = sessionQuery.data?.state;
+  if (state === "CREATED" && !hasMessages && startMutation.isPending) {
+    return <Loader label="Получаем первый вопрос..." />;
+  }
+
+  if (state === "CREATED" && !hasMessages && startMutation.isError) {
+    return (
+      <ErrorState
+        error={startMutation.error}
+        retry={() => {
+          autoStartAttemptedRef.current = false;
+          startMutation.reset();
+          startMutation.mutate();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="grid">

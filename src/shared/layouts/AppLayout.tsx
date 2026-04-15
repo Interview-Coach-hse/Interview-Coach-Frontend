@@ -1,5 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { authStore } from "@/features/auth/hooks/auth-store";
+import { cn } from "@/shared/lib/cn";
+import { useTopbarState } from "@/shared/lib/useTopbarState";
 import { Button } from "@/shared/ui/Button";
 
 const links = [
@@ -12,12 +14,13 @@ export function AppLayout() {
   const navigate = useNavigate();
   const user = authStore((state) => state.user);
   const clearSession = authStore((state) => state.clearSession);
+  const isScrolled = useTopbarState();
   const isAdmin = user?.role === "ADMIN" || user?.role === "ROLE_ADMIN";
   const navLinks = isAdmin ? [...links, { to: "/admin/users", label: "Админка" }] : links;
 
   return (
     <div className="shell">
-      <header className="topbar">
+      <header className={cn("topbar", isScrolled && "topbar-scrolled")}>
         <Link to="/app/dashboard" className="brand">
           Interview Coach
         </Link>

@@ -1,4 +1,6 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { cn } from "@/shared/lib/cn";
+import { useTopbarState } from "@/shared/lib/useTopbarState";
 
 const publicLinks = [
   { to: "/profiles", label: "Сценарии" },
@@ -7,9 +9,11 @@ const publicLinks = [
 ];
 
 export function PublicLayout() {
+  const isScrolled = useTopbarState();
+
   return (
     <div className="shell">
-      <header className="topbar">
+      <header className={cn("topbar", isScrolled && "topbar-scrolled")}>
         <Link to="/profiles" className="brand">
           Interview Coach
         </Link>

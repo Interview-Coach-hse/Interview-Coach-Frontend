@@ -501,8 +501,7 @@ h2 {
 }
 
 .session-composer {
-  position: sticky;
-  bottom: 1rem;
+  position: static;
 }
 
 .session-composer .field {
@@ -709,6 +708,6 @@ h2 {
   }
 
   .session-composer {
-    bottom: 0.5rem;
+    position: static;
   }
 }

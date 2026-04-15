@@ -9,7 +9,7 @@ export function SessionDetailPage() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const autoStartAttemptedRef = useRef(false);
-  const { sessionQuery, messagesQuery, startMutation, pauseMutation, resumeMutation, cancelMutation, finishMutation, sendMessageMutation } =
+  const { sessionQuery, messagesQuery, startMutation, pauseMutation, resumeMutation, cancelMutation, sendMessageMutation } =
     useSession(sessionId);
 
   const state = sessionQuery.data?.state;
@@ -69,11 +69,7 @@ export function SessionDetailPage() {
             {state === "PAUSED" ? <Button variant="secondary" onClick={() => resumeMutation.mutate()}>Возобновить</Button> : null}
             <Button variant="danger" onClick={() => cancelMutation.mutate()}>Отменить</Button>
             <Button
-              onClick={() =>
-                finishMutation.mutate(undefined, {
-                  onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
-                })
-              }
+              onClick={() => navigate(`/app/sessions/${sessionId}/report`)}
             >
               Завершить
             </Button>

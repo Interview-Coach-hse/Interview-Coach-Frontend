@@ -41,7 +41,6 @@ export function VerifyEmailPage() {
       <Card className="auth-card">
         <p className="eyebrow">Verify</p>
         <h1>Подтверждение email</h1>
-        <p className="muted">Код приходит через backend. Если в dev среде код возвращается в ответе, поле уже заполнено.</p>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Input label="Email" error={errors.email?.message} {...register("email")} />
           <Input label="Код" error={errors.code?.message} {...register("code")} />

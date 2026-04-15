@@ -528,6 +528,21 @@ h2 {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
 }
 
+.error-backdrop {
+  inset: auto 1rem 1rem auto;
+  display: block;
+  padding: 0;
+  background: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.error-modal {
+  width: min(420px, calc(100vw - 2rem));
+  pointer-events: auto;
+  animation: error-panel-in 180ms ease-out;
+}
+
 .modal-close {
   position: absolute;
   top: 0.75rem;
@@ -541,6 +556,18 @@ h2 {
   cursor: pointer;
   font-size: 1.2rem;
   line-height: 1;
+}
+
+@keyframes error-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .toast-stack {
@@ -641,6 +668,16 @@ h2 {
     right: 0.5rem;
     bottom: 0.5rem;
     width: min(100% - 1rem, 360px);
+  }
+
+  .error-backdrop {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+  }
+
+  .error-modal {
+    width: 100%;
   }
 
   .message-bubble {

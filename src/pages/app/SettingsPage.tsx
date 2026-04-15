@@ -1,7 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
+import { authStore } from "@/features/auth/hooks/auth-store";
 import { useCurrentUser } from "@/features/user/hooks/useCurrentUser";
 import { directionOptions, levelOptions } from "@/shared/lib/options";
 import { Button, Card, Input, PageHeader, Select, useToast } from "@/shared/ui";
@@ -17,6 +19,8 @@ const schema = z.object({
 });
 
 export function SettingsPage() {
+  const navigate = useNavigate();
+  const clearSession = authStore((state) => state.clearSession);
   const { query, updateMutation } = useCurrentUser();
   const { showToast } = useToast();
   const { register, handleSubmit, reset } = useForm<z.infer<typeof schema>>({
@@ -56,9 +60,21 @@ export function SettingsPage() {
             <Input label="Язык UI" {...register("interfaceLanguage")} />
           </div>
           <Input label="Тема" {...register("theme")} />
-          <Button type="submit" disabled={updateMutation.isPending}>
-            Сохранить
-          </Button>
+          <div className="inline-actions">
+            <Button type="submit" disabled={updateMutation.isPending}>
+              Сохранить
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                clearSession();
+                navigate("/login");
+              }}
+            >
+              Выйти
+            </Button>
+          </div>
         </form>
       </Card>
     </div>

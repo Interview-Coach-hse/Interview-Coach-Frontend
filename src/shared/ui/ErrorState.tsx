@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { normalizeError } from "@/shared/lib/error";
 import { Button } from "@/shared/ui/Button";
 
@@ -8,11 +9,23 @@ export function ErrorState({
   error: unknown;
   retry?: () => void;
 }) {
+  const [isDismissed, setIsDismissed] = useState(false);
   const normalized = normalizeError(error);
 
+  useEffect(() => {
+    setIsDismissed(false);
+  }, [error]);
+
+  if (isDismissed) {
+    return null;
+  }
+
   return (
-    <div className="modal-backdrop">
-      <div className="modal" role="alertdialog" aria-modal="true" aria-labelledby="error-modal-title">
+    <div className="modal-backdrop error-backdrop">
+      <div className="modal error-modal" role="alertdialog" aria-modal="false" aria-labelledby="error-modal-title">
+        <button className="modal-close" type="button" aria-label="Закрыть" onClick={() => setIsDismissed(true)}>
+          ×
+        </button>
         <p className="eyebrow">Ошибка</p>
         <h3 id="error-modal-title">{normalized.title}</h3>
         <p className="muted">{normalized.message}</p>

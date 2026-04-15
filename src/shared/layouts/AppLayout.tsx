@@ -1,8 +1,7 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { authStore } from "@/features/auth/hooks/auth-store";
 import { cn } from "@/shared/lib/cn";
 import { useTopbarState } from "@/shared/lib/useTopbarState";
-import { Button } from "@/shared/ui/Button";
 
 const links = [
   { to: "/app/dashboard", label: "Дашборд" },
@@ -11,9 +10,7 @@ const links = [
 ];
 
 export function AppLayout() {
-  const navigate = useNavigate();
   const user = authStore((state) => state.user);
-  const clearSession = authStore((state) => state.clearSession);
   const isScrolled = useTopbarState();
   const isAdmin = user?.role === "ADMIN" || user?.role === "ROLE_ADMIN";
   const navLinks = isAdmin ? [...links, { to: "/admin/users", label: "Админка" }] : links;
@@ -35,15 +32,6 @@ export function AppLayout() {
           <NavLink to="/app/settings" className="user-chip">
             {user?.email ?? "User"}
           </NavLink>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              clearSession();
-              navigate("/login");
-            }}
-          >
-            Выйти
-          </Button>
         </div>
       </header>
       <main className="page">

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/features/admin/api/admin.api";
-import { profilesApi, type ProfilesFilters } from "@/features/profiles/api/profiles.api";
+import type { ProfilesFilters } from "@/features/profiles/api/profiles.api";
 
 export function useAdminUsers(filters: { email?: string; roleCode?: string }) {
   return useQuery({
@@ -12,7 +12,7 @@ export function useAdminUsers(filters: { email?: string; roleCode?: string }) {
 export function useAdminProfiles(filters: ProfilesFilters = { page: 0, size: 50 }) {
   return useQuery({
     queryKey: ["admin", "profiles", filters],
-    queryFn: () => profilesApi.list(filters),
+    queryFn: () => adminApi.profiles(filters),
   });
 }
 

@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { authApi } from "@/features/auth/api/auth.api";
-import { normalizeError } from "@/shared/lib/error";
-import { Button, Card, Input } from "@/shared/ui";
+import { Button, Card, ErrorState, Input } from "@/shared/ui";
 
 const schema = z.object({
   email: z.string().email(),
@@ -15,11 +15,11 @@ type VerifyValues = z.infer<typeof schema>;
 
 export function VerifyEmailPage() {
   const [params] = useSearchParams();
+  const [submitError, setSubmitError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError,
   } = useForm<VerifyValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -32,7 +32,7 @@ export function VerifyEmailPage() {
     try {
       await authApi.verifyEmailConfirm(values);
     } catch (error) {
-      setError("root", { message: normalizeError(error).message });
+      setSubmitError(error);
     }
   }
 
@@ -45,7 +45,6 @@ export function VerifyEmailPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <Input label="Email" error={errors.email?.message} {...register("email")} />
           <Input label="Код" error={errors.code?.message} {...register("code")} />
-          {errors.root ? <p className="field-error">{errors.root.message}</p> : null}
           <div className="inline-actions">
             <Button type="submit" disabled={isSubmitting}>
               Подтвердить
@@ -65,6 +64,7 @@ export function VerifyEmailPage() {
           </div>
         </form>
       </Card>
+      {submitError ? <ErrorState error={submitError} /> : null}
     </div>
   );
 }

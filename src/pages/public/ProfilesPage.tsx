@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { InterviewDirection, InterviewLevel } from "@/api/generated/schema";
 import type { ProfilesFilters } from "@/features/profiles/api/profiles.api";
 import { useProfiles } from "@/features/profiles/hooks/useProfiles";
 import { directionOptions, levelOptions } from "@/shared/lib/options";
+import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
 
 export function ProfilesPage() {
@@ -15,7 +16,17 @@ export function ProfilesPage() {
     page: 0,
     size: 12,
   });
-  const query = useProfiles(filters);
+  const debouncedTag = useDebouncedValue(filters.tag ?? "");
+  const debouncedQuery = useDebouncedValue(filters.query ?? "");
+  const requestFilters = useMemo(
+    () => ({
+      ...filters,
+      tag: debouncedTag,
+      query: debouncedQuery,
+    }),
+    [debouncedQuery, debouncedTag, filters],
+  );
+  const query = useProfiles(requestFilters);
 
   return (
     <div className="grid">

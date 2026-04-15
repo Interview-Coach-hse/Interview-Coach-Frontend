@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { normalizeError } from "@/shared/lib/error";
-import { Button, Card, Input } from "@/shared/ui";
+import { Button, Card, ErrorState, Input } from "@/shared/ui";
 
 const schema = z.object({
   email: z.string().email("Введите корректный email"),
@@ -17,6 +17,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { loginMutation } = useAuth();
+  const [submitError, setSubmitError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
@@ -26,8 +27,12 @@ export function LoginPage() {
   });
 
   async function onSubmit(values: LoginValues) {
-    await loginMutation.mutateAsync(values);
-    navigate(location.state?.from ?? "/app/dashboard");
+    try {
+      await loginMutation.mutateAsync(values);
+      navigate(location.state?.from ?? "/app/dashboard");
+    } catch (error) {
+      setSubmitError(error);
+    }
   }
 
   return (
@@ -39,7 +44,6 @@ export function LoginPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <Input label="Email" placeholder="name@example.com" error={errors.email?.message} {...register("email")} />
           <Input label="Пароль" type="password" error={errors.password?.message} {...register("password")} />
-          {loginMutation.error ? <p className="field-error">{normalizeError(loginMutation.error).message}</p> : null}
           <Button type="submit" fullWidth disabled={loginMutation.isPending}>
             Войти
           </Button>
@@ -53,6 +57,7 @@ export function LoginPage() {
           </Link>
         </div>
       </Card>
+      {submitError ? <ErrorState error={submitError} /> : null}
     </div>
   );
 }

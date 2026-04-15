@@ -86,12 +86,23 @@ export function AdminProfileEditPage() {
     { label: "Да", value: "true" },
     { label: "Нет", value: "false" },
   ];
+  const nextOrderIndex = useMemo(() => {
+    const values = (linksQuery.data ?? [])
+      .map((item) => item.orderIndex ?? -1)
+      .filter((value) => value >= 0);
+
+    if (!values.length) {
+      return 0;
+    }
+
+    return Math.max(...values) + 1;
+  }, [linksQuery.data]);
 
   const resetEditingLink = () => {
     setEditingLinkId(null);
     resetLinkForm({
       questionId: "",
-      orderIndex: 0,
+      orderIndex: nextOrderIndex,
       required: "true",
     });
   };
@@ -110,6 +121,18 @@ export function AdminProfileEditPage() {
       tags: profileQuery.data.tags?.join(", ") ?? "",
     });
   }, [defaults, profileQuery.data, reset]);
+
+  useEffect(() => {
+    if (editingLinkId) {
+      return;
+    }
+
+    resetLinkForm({
+      questionId: "",
+      orderIndex: nextOrderIndex,
+      required: "true",
+    });
+  }, [editingLinkId, nextOrderIndex, resetLinkForm]);
 
   if (profileId && profileQuery.isLoading) {
     return <Loader />;
@@ -232,6 +255,9 @@ export function AdminProfileEditPage() {
                 error={linkErrors.orderIndex?.message}
                 {...registerLink("orderIndex")}
               />
+              <p className="muted" style={{ margin: "-0.25rem 0 0" }}>
+                По умолчанию подставляется следующий номер, но его можно изменить вручную.
+              </p>
               <Select
                 label="Обязательный"
                 options={requiredOptions}

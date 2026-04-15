@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { authApi } from "@/features/auth/api/auth.api";
-import { normalizeError } from "@/shared/lib/error";
-import { Button, Card, Input } from "@/shared/ui";
+import { Button, Card, ErrorState, Input } from "@/shared/ui";
 
 const schema = z
   .object({
@@ -21,11 +21,11 @@ type RegisterValues = z.infer<typeof schema>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const [submitError, setSubmitError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError,
   } = useForm<RegisterValues>({
     resolver: zodResolver(schema),
   });
@@ -38,7 +38,7 @@ export function RegisterPage() {
       });
       navigate(`/verify-email?email=${encodeURIComponent(values.email)}&code=${response.code ?? ""}`);
     } catch (error) {
-      setError("root", { message: normalizeError(error).message });
+      setSubmitError(error);
     }
   }
 
@@ -56,7 +56,6 @@ export function RegisterPage() {
             error={errors.confirmPassword?.message}
             {...register("confirmPassword")}
           />
-          {errors.root ? <p className="field-error">{errors.root.message}</p> : null}
           <Button type="submit" fullWidth disabled={isSubmitting}>
             Создать аккаунт
           </Button>
@@ -68,6 +67,7 @@ export function RegisterPage() {
           </Link>
         </p>
       </Card>
+      {submitError ? <ErrorState error={submitError} /> : null}
     </div>
   );
 }

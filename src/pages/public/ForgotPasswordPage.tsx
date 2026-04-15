@@ -1,14 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { authApi } from "@/features/auth/api/auth.api";
-import { Button, Card, Input } from "@/shared/ui";
+import { Button, Card, ErrorState, Input } from "@/shared/ui";
 
 const schema = z.object({
   email: z.string().email("Введите корректный email"),
 });
 
 export function ForgotPasswordPage() {
+  const [submitError, setSubmitError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
@@ -25,9 +27,13 @@ export function ForgotPasswordPage() {
         <h1>Восстановление пароля</h1>
         <form
           onSubmit={handleSubmit(async (values) => {
-            const response = await authApi.requestPasswordReset(values);
-            if (response.resetToken) {
-              setValue("email", `${values.email} | dev token: ${response.resetToken}`);
+            try {
+              const response = await authApi.requestPasswordReset(values);
+              if (response.resetToken) {
+                setValue("email", `${values.email} | dev token: ${response.resetToken}`);
+              }
+            } catch (error) {
+              setSubmitError(error);
             }
           })}
         >
@@ -37,6 +43,7 @@ export function ForgotPasswordPage() {
           </Button>
         </form>
       </Card>
+      {submitError ? <ErrorState error={submitError} /> : null}
     </div>
   );
 }

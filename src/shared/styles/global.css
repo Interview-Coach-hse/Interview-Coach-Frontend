@@ -411,6 +411,31 @@ h2 {
   gap: 0.75rem;
 }
 
+.filters {
+  align-items: flex-end;
+}
+
+.filters > .field,
+.filters > .btn {
+  flex: 1 1 0;
+  min-width: 180px;
+}
+
+.filters > .field {
+  margin-bottom: 0;
+}
+
+.filters > .btn {
+  min-height: 54px;
+  margin-top: 1.55rem;
+  border-radius: 18px;
+}
+
+.filters > .btn.btn-secondary {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .message-list {
   display: grid;
   gap: 1rem;

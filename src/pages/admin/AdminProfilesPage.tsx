@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { InterviewDirection, InterviewLevel } from "@/api/generated/schema";
 import type { ProfilesFilters } from "@/features/profiles/api/profiles.api";
-import { useProfiles } from "@/features/profiles/hooks/useProfiles";
+import { useAdminProfiles } from "@/features/admin/hooks/useAdmin";
 import { directionOptions, levelOptions } from "@/shared/lib/options";
+import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
 
 export function AdminProfilesPage() {
@@ -15,15 +16,17 @@ export function AdminProfilesPage() {
     page: 0,
     size: 50,
   });
-  const query = useProfiles(filters);
-
-  if (query.isLoading) {
-    return <Loader />;
-  }
-
-  if (query.isError) {
-    return <ErrorState error={query.error} retry={() => query.refetch()} />;
-  }
+  const debouncedTag = useDebouncedValue(filters.tag ?? "");
+  const debouncedQuery = useDebouncedValue(filters.query ?? "");
+  const requestFilters = useMemo(
+    () => ({
+      ...filters,
+      tag: debouncedTag,
+      query: debouncedQuery,
+    }),
+    [debouncedQuery, debouncedTag, filters],
+  );
+  const query = useAdminProfiles(requestFilters);
 
   const profiles = query.data?.items ?? [];
 
@@ -77,6 +80,8 @@ export function AdminProfilesPage() {
           </Button>
         </div>
       </Card>
+      {query.isLoading ? <Loader /> : null}
+      {query.isError ? <ErrorState error={query.error} retry={() => query.refetch()} /> : null}
       <div className="list">
         {profiles.map((profile) => (
           <Card key={profile.id}>

@@ -1,12 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 import { useAdminProfileEditor } from "@/features/admin/hooks/useAdmin";
 import { InterviewDirection, InterviewLevel } from "@/api/generated/schema";
 import { directionOptions, levelOptions } from "@/shared/lib/options";
-import { Badge, Button, Card, ErrorState, Input, Loader, PageHeader, Select, useToast } from "@/shared/ui";
+import { Badge, Button, Card, ErrorState, Input, Loader, PageHeader, Select, Textarea, useToast } from "@/shared/ui";
 
 const schema = z.object({
   title: z.string().min(3, "Минимум 3 символа"),
@@ -24,6 +24,7 @@ const linkSchema = z.object({
 
 export function AdminProfileEditPage() {
   const { profileId } = useParams();
+  const navigate = useNavigate();
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const { showToast } = useToast();
   const {
@@ -39,17 +40,22 @@ export function AdminProfileEditPage() {
   } = useAdminProfileEditor(profileId);
   const defaults = useMemo(
     () => ({
-      title: profileQuery.data?.title ?? "",
-      description: profileQuery.data?.description ?? "",
-      direction: profileQuery.data?.direction ?? InterviewDirection.Backend,
-      level: profileQuery.data?.level ?? InterviewLevel.Junior,
-      tags: profileQuery.data?.tags?.join(", ") ?? "",
+      title: "",
+      description: "",
+      direction: InterviewDirection.Backend,
+      level: InterviewLevel.Junior,
+      tags: "",
     }),
-    [profileQuery.data],
+    [],
   );
-  const { register, handleSubmit } = useForm<z.infer<typeof schema>>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    values: defaults,
+    defaultValues: defaults,
   });
   const {
     register: registerLink,
@@ -90,6 +96,21 @@ export function AdminProfileEditPage() {
     });
   };
 
+  useEffect(() => {
+    if (!profileQuery.data) {
+      reset(defaults);
+      return;
+    }
+
+    reset({
+      title: profileQuery.data.title ?? "",
+      description: profileQuery.data.description ?? "",
+      direction: profileQuery.data.direction ?? InterviewDirection.Backend,
+      level: profileQuery.data.level ?? InterviewLevel.Junior,
+      tags: profileQuery.data.tags?.join(", ") ?? "",
+    });
+  }, [defaults, profileQuery.data, reset]);
+
   if (profileId && profileQuery.isLoading) {
     return <Loader />;
   }
@@ -112,17 +133,31 @@ export function AdminProfileEditPage() {
               ...values,
               tags: values.tags?.split(",").map((item) => item.trim()).filter(Boolean),
             };
-            await saveMutation.mutateAsync(payload);
+            const savedProfile = await saveMutation.mutateAsync(payload);
             showToast(profileId ? "Профиль обновлён" : "Профиль создан");
+
+            if (!profileId && savedProfile.id) {
+              navigate(`/admin/profiles/${savedProfile.id}/edit`, { replace: true });
+            }
           })}
         >
-          <Input label="Название" {...register("title")} />
-          <Input label="Описание" {...register("description")} />
+          <Input label="Название" error={errors.title?.message} {...register("title")} />
+          <Textarea label="Описание" rows={5} error={errors.description?.message} {...register("description")} />
           <div className="grid grid-2">
-            <Select label="Направление" options={directionOptions.filter((item) => item.value)} {...register("direction")} />
-            <Select label="Уровень" options={levelOptions.filter((item) => item.value)} {...register("level")} />
+            <Select
+              label="Направление"
+              error={errors.direction?.message}
+              options={directionOptions.filter((item) => item.value)}
+              {...register("direction")}
+            />
+            <Select
+              label="Уровень"
+              error={errors.level?.message}
+              options={levelOptions.filter((item) => item.value)}
+              {...register("level")}
+            />
           </div>
-          <Input label="Теги через запятую" {...register("tags")} />
+          <Input label="Теги через запятую" error={errors.tags?.message} {...register("tags")} />
           <div className="inline-actions">
             <Button type="submit" disabled={saveMutation.isPending}>
               Сохранить

@@ -1,6 +1,7 @@
 :root {
   font-family: "Manrope", "Segoe UI", sans-serif;
   color: #ecf7ff;
+  --app-background-color: #08111f;
   --app-background:
     radial-gradient(circle at top left, rgba(0, 214, 201, 0.22), transparent 28%),
     radial-gradient(circle at top right, rgba(255, 138, 61, 0.16), transparent 24%),
@@ -36,17 +37,34 @@ body,
 }
 
 html {
+  background-color: var(--app-background-color);
   background: var(--app-background);
 }
 
 body {
   min-height: 100vh;
   min-height: 100dvh;
+  background-color: var(--app-background-color);
   background: var(--app-background);
+  position: relative;
+  overscroll-behavior-y: none;
 }
 
 #root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--app-background-color);
   background: transparent;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--app-background-color);
+  background: var(--app-background);
 }
 
 a {
@@ -63,6 +81,8 @@ textarea {
 
 .shell {
   min-height: 100vh;
+  min-height: 100dvh;
+  background: transparent;
 }
 
 .topbar {
@@ -208,6 +228,7 @@ h2 {
 
 .auth-shell {
   min-height: calc(100vh - 96px);
+  min-height: calc(100dvh - 96px);
   display: grid;
   place-items: center;
 }

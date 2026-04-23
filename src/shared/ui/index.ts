@@ -6,6 +6,7 @@ export * from "@/shared/ui/ErrorState";
 export * from "@/shared/ui/Input";
 export * from "@/shared/ui/Loader";
 export * from "@/shared/ui/PageHeader";
+export * from "@/shared/ui/QuestionPicker";
 export * from "@/shared/ui/Select";
 export * from "@/shared/ui/Textarea";
 export * from "@/shared/ui/ToastProvider";

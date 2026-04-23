@@ -70,6 +70,11 @@ export enum ReportItemType {
   CategoryScore = "CATEGORY_SCORE",
 }
 
+export enum ScoreSource {
+  Ai = "AI",
+  Fallback = "FALLBACK",
+}
+
 export type ErrorResponse = {
   timestamp: string;
   status: number;
@@ -263,6 +268,7 @@ export type ReportResponse = {
   status?: ReportStatus;
   summaryText?: string | null;
   overallScore?: number | null;
+  scoreSource?: ScoreSource | null;
   items?: ReportItemResponse[];
 };
 

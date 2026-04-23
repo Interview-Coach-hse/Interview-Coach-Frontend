@@ -5,7 +5,7 @@ import { z } from "zod";
 import { InterviewDirection, InterviewLevel, QuestionStatus, QuestionType } from "@/api/generated/schema";
 import { useAdminQuestions } from "@/features/admin/hooks/useAdmin";
 import { directionOptions, levelOptions, questionStatusOptions, questionTypeOptions } from "@/shared/lib/options";
-import { Button, Card, ErrorState, Loader, PageHeader, Select, Textarea, useToast } from "@/shared/ui";
+import { Badge, Button, Card, ErrorState, Loader, PageHeader, Select, Textarea, useToast } from "@/shared/ui";
 
 const schema = z.object({
   text: z.string().min(10, "Минимум 10 символов"),
@@ -16,7 +16,14 @@ const schema = z.object({
 });
 
 export function AdminQuestionsPage() {
-  const { listQuery, createMutation, updateMutation, deleteMutation } = useAdminQuestions();
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
+  const { listQuery, createMutation, updateMutation, deleteMutation } = useAdminQuestions({
+    page,
+    size: pageSize,
+    sortBy: "updatedAt",
+    sortDir: "desc",
+  });
   const { showToast } = useToast();
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -107,6 +114,27 @@ export function AdminQuestionsPage() {
         </form>
       </Card>
       <Card>
+        <div className="inline-actions" style={{ justifyContent: "space-between", marginBottom: "1rem" }}>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            Всего вопросов: {listQuery.data?.totalElements ?? 0}
+          </p>
+          <div className="inline-actions">
+            <Button type="button" variant="secondary" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>
+              Назад
+            </Button>
+            <Badge>
+              {`Страница ${(listQuery.data?.page ?? page) + 1} / ${Math.max(listQuery.data?.totalPages ?? 1, 1)}`}
+            </Badge>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={page >= Math.max((listQuery.data?.totalPages ?? 1) - 1, 0)}
+              onClick={() => setPage((value) => value + 1)}
+            >
+              Вперёд
+            </Button>
+          </div>
+        </div>
         <table className="data-table">
           <thead>
             <tr>
@@ -117,7 +145,7 @@ export function AdminQuestionsPage() {
             </tr>
           </thead>
           <tbody>
-            {listQuery.data?.map((item) => (
+            {listQuery.data?.items?.map((item) => (
               <tr key={item.id}>
                 <td>{item.text}</td>
                 <td>{item.questionType}</td>

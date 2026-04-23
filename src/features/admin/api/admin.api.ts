@@ -1,5 +1,7 @@
 import { request } from "@/api";
 import type {
+  InterviewDirection,
+  InterviewLevel,
   AdminUserResponse,
   AdminUserUpdateRequest,
   PageProfileResponse,
@@ -7,10 +9,37 @@ import type {
   ProfileQuestionResponse,
   ProfileRequest,
   ProfileResponse,
+  QuestionStatus,
   QuestionRequest,
   QuestionResponse,
+  QuestionType,
   UUID,
 } from "@/api/generated/schema";
+
+export type QuestionSortBy = "updatedAt" | "createdAt" | "text";
+export type QuestionSortDir = "asc" | "desc";
+
+export type AdminQuestionsFilters = {
+  query?: string;
+  search?: string;
+  direction?: InterviewDirection | "";
+  difficulty?: InterviewLevel | "";
+  questionType?: QuestionType | "";
+  status?: QuestionStatus | "";
+  excludeProfileId?: UUID;
+  page?: number;
+  size?: number;
+  sortBy?: QuestionSortBy;
+  sortDir?: QuestionSortDir;
+};
+
+export type PageQuestionResponse = {
+  items?: QuestionResponse[];
+  page?: number;
+  size?: number;
+  totalElements?: number;
+  totalPages?: number;
+};
 
 export const adminApi = {
   users: (filters: { email?: string; roleCode?: string }) =>
@@ -24,7 +53,8 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),
-  questions: () => request<QuestionResponse[]>("/admin/questions"),
+  questions: (filters?: AdminQuestionsFilters) =>
+    request<PageQuestionResponse>("/admin/questions", { query: filters }),
   question: (questionId: UUID) => request<QuestionResponse>(`/admin/questions/${questionId}`),
   createQuestion: (payload: QuestionRequest) =>
     request<QuestionResponse>("/admin/questions", {

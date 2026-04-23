@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { adminApi } from "@/features/admin/api/admin.api";
+import { adminApi, type AdminQuestionsFilters } from "@/features/admin/api/admin.api";
 import type { ProfilesFilters } from "@/features/profiles/api/profiles.api";
 
 export function useAdminUsers(filters: { email?: string; roleCode?: string }) {
@@ -24,13 +24,13 @@ export function useAdminUser(userId?: string) {
   });
 }
 
-export function useAdminQuestions() {
+export function useAdminQuestions(filters: AdminQuestionsFilters = {}) {
   const queryClient = useQueryClient();
 
   return {
     listQuery: useQuery({
-      queryKey: ["admin", "questions"],
-      queryFn: adminApi.questions,
+      queryKey: ["admin", "questions", filters],
+      queryFn: () => adminApi.questions(filters),
     }),
     createMutation: useMutation({
       mutationFn: adminApi.createQuestion,
@@ -63,8 +63,15 @@ export function useAdminProfileEditor(profileId?: string) {
       enabled: Boolean(profileId),
     }),
     questionsQuery: useQuery({
-      queryKey: ["admin", "questions", "options"],
-      queryFn: adminApi.questions,
+      queryKey: ["admin", "questions", "options", profileId],
+      queryFn: () =>
+        adminApi.questions({
+          excludeProfileId: profileId,
+          page: 0,
+          size: 20,
+          sortBy: "updatedAt",
+          sortDir: "desc",
+        }),
     }),
     saveMutation: useMutation({
       mutationFn: (payload: Parameters<typeof adminApi.updateProfile>[1]) =>

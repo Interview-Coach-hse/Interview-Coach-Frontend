@@ -6,7 +6,7 @@ import { z } from "zod";
 import { useAdminProfileEditor } from "@/features/admin/hooks/useAdmin";
 import { InterviewDirection, InterviewLevel } from "@/api/generated/schema";
 import { directionOptions, levelOptions } from "@/shared/lib/options";
-import { Badge, Button, Card, ErrorState, Input, Loader, PageHeader, Select, Textarea, useToast } from "@/shared/ui";
+import { Badge, Button, Card, ErrorState, Input, Loader, PageHeader, QuestionPicker, Select, Textarea, useToast } from "@/shared/ui";
 
 const schema = z.object({
   title: z.string().min(3, "Минимум 3 символа"),
@@ -61,6 +61,8 @@ export function AdminProfileEditPage() {
     register: registerLink,
     handleSubmit: handleLinkSubmit,
     reset: resetLinkForm,
+    setValue: setLinkValue,
+    watch: watchLink,
     formState: { errors: linkErrors },
   } = useForm<z.infer<typeof linkSchema>>({
     resolver: zodResolver(linkSchema),
@@ -71,21 +73,11 @@ export function AdminProfileEditPage() {
     },
   });
 
-  const questionOptions = useMemo(
-    () => [
-      { label: "Выберите вопрос", value: "" },
-      ...(questionsQuery.data ?? []).map((question) => ({
-        label: question.text ?? "Без текста",
-        value: question.id ?? "",
-      })),
-    ],
-    [questionsQuery.data],
-  );
-
   const requiredOptions = [
     { label: "Да", value: "true" },
     { label: "Нет", value: "false" },
   ];
+  const selectedQuestionId = watchLink("questionId");
   const nextOrderIndex = useMemo(() => {
     const values = (linksQuery.data ?? [])
       .map((item) => item.orderIndex ?? -1)
@@ -243,12 +235,23 @@ export function AdminProfileEditPage() {
             })}
           >
             <div className="grid grid-2">
-              <Select
-                label="Вопрос"
-                options={questionOptions}
-                error={linkErrors.questionId?.message}
-                {...registerLink("questionId")}
-              />
+              <div style={{ gridColumn: "1 / -1" }}>
+                <input type="hidden" {...registerLink("questionId")} />
+                <QuestionPicker
+                  value={selectedQuestionId}
+                  excludeProfileId={profileId}
+                  initialData={questionsQuery.data}
+                  error={linkErrors.questionId?.message}
+                  disabled={addLinkMutation.isPending || updateLinkMutation.isPending}
+                  onChange={(questionId) => {
+                    setLinkValue("questionId", questionId, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    });
+                  }}
+                />
+              </div>
               <Input
                 label="Порядок"
                 type="number"

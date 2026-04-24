@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { SessionState } from "@/api/generated/schema";
+import { MessageType, SenderType, SessionState } from "@/api/generated/schema";
 import { useProfile } from "@/features/profiles/hooks/useProfiles";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { Button, Card, ErrorState, Loader, PageHeader, Textarea } from "@/shared/ui";
@@ -23,8 +23,15 @@ export function SessionDetailPage() {
   const isPaused = state === SessionState.Paused;
   const isLocked = !isInProgress;
   const totalQuestions = profileQuery.data?.questions?.length ?? 0;
-  const currentQuestionIndex = sessionQuery.data?.currentQuestionIndex ?? null;
-  const isAnsweringLastQuestion = currentQuestionIndex !== null && totalQuestions > 0 && currentQuestionIndex >= totalQuestions - 1;
+  const askedQuestionsCount = messages.filter(
+    (item) => item.senderType === SenderType.Interviewer && item.messageType === MessageType.Question,
+  ).length;
+  const lastMessage = messages.at(-1);
+  const isAnsweringLastQuestion =
+    totalQuestions > 0 &&
+    askedQuestionsCount >= totalQuestions &&
+    lastMessage?.senderType === SenderType.Interviewer &&
+    lastMessage?.messageType === MessageType.Question;
 
   const scrollMessagesToBottom = (behavior: ScrollBehavior = "smooth") => {
     const node = messageListRef.current;

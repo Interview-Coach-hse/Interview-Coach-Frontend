@@ -33,7 +33,7 @@ export function ProfilesPage() {
       <PageHeader
         eyebrow="Interview Simulator"
         title="Каталог сценариев"
-        description="Подбирайте профиль по роли, уровню и темам."
+        description=""
       />
       <Card>
         <div className="filters">

@@ -458,6 +458,21 @@ h2 {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+}
+
+.filters-grid > .field {
+  min-width: 0;
+}
+
+.filters-grid .input,
+.filters-grid .textarea {
+  min-width: 0;
+}
+
 .question-picker {
   display: grid;
   gap: 0.9rem;
@@ -795,6 +810,7 @@ h2 {
   position: relative;
   width: 100%;
   overflow-x: auto;
+  overflow-y: visible;
 }
 
 .progress-chart {
@@ -854,8 +870,15 @@ h2 {
   border-radius: 16px;
   background: rgba(8, 17, 31, 0.96);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
-  transform: translate(-50%, calc(-100% - 14px));
   pointer-events: none;
+}
+
+.progress-chart-tooltip-above {
+  transform: translate(-50%, calc(-100% - 14px));
+}
+
+.progress-chart-tooltip-below {
+  transform: translate(-50%, 14px);
 }
 
 .session-history-card {
@@ -889,6 +912,10 @@ h2 {
   .grid-3,
   .metrics {
     grid-template-columns: 1fr;
+  }
+
+  .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .topbar,
@@ -947,5 +974,11 @@ h2 {
   .session-history-card-actions {
     width: 100%;
     justify-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
   }
 }

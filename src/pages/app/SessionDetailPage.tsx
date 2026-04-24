@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { SessionState } from "@/api/generated/schema";
+import { MessageType, SenderType, SessionState } from "@/api/generated/schema";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { Button, Card, ErrorState, Loader, PageHeader, Textarea } from "@/shared/ui";
 
@@ -9,17 +9,47 @@ export function SessionDetailPage() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const autoStartAttemptedRef = useRef(false);
+  const messageListRef = useRef<HTMLDivElement | null>(null);
+  const shouldStickToBottomRef = useRef(true);
   const { sessionQuery, messagesQuery, startMutation, pauseMutation, resumeMutation, cancelMutation, finishMutation, sendMessageMutation } =
     useSession(sessionId);
 
   const state = sessionQuery.data?.state;
+  const messages = messagesQuery.data?.items ?? [];
+  const lastMessage = messages.at(-1);
   const hasMessages = Boolean(messagesQuery.data?.items?.length);
   const isInProgress = state === SessionState.InProgress;
   const isPaused = state === SessionState.Paused;
   const isLocked = !isInProgress;
 
+  const scrollMessagesToBottom = (behavior: ScrollBehavior = "smooth") => {
+    const node = messageListRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    node.scrollTo({
+      top: node.scrollHeight,
+      behavior,
+    });
+  };
+
+  const handleFinish = () => {
+    finishMutation.mutate(undefined, {
+      onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
+    });
+  };
+
   useEffect(() => {
     autoStartAttemptedRef.current = false;
+  }, [sessionId]);
+
+  useEffect(() => {
+    shouldStickToBottomRef.current = true;
+    requestAnimationFrame(() => {
+      scrollMessagesToBottom("auto");
+    });
   }, [sessionId]);
 
   useEffect(() => {
@@ -56,15 +86,21 @@ export function SessionDetailPage() {
     );
   }
 
+  useEffect(() => {
+    if (shouldStickToBottomRef.current) {
+      requestAnimationFrame(() => {
+        scrollMessagesToBottom(messages.length > 1 ? "smooth" : "auto");
+      });
+    }
+  }, [messages.length]);
+
   if (finishMutation.isError) {
     return (
       <ErrorState
         error={finishMutation.error}
         retry={() => {
           finishMutation.reset();
-          finishMutation.mutate(undefined, {
-            onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
-          });
+          handleFinish();
         }}
       />
     );
@@ -84,11 +120,7 @@ export function SessionDetailPage() {
             <Button variant="danger" onClick={() => cancelMutation.mutate()}>Отменить</Button>
             <Button
               disabled={finishMutation.isPending}
-              onClick={() =>
-                finishMutation.mutate(undefined, {
-                  onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
-                })
-              }
+              onClick={handleFinish}
             >
               {finishMutation.isPending ? "Завершаем..." : "Завершить"}
             </Button>
@@ -96,8 +128,16 @@ export function SessionDetailPage() {
         }
       />
       <Card>
-        <div className="message-list">
-          {messagesQuery.data?.items?.map((item) => (
+        <div
+          ref={messageListRef}
+          className="message-list"
+          onScroll={(event) => {
+            const node = event.currentTarget;
+            const distanceToBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
+            shouldStickToBottomRef.current = distanceToBottom < 48;
+          }}
+        >
+          {messages.map((item) => (
             <div key={item.id} className={`message-bubble ${item.senderType === "USER" ? "user" : ""}`}>
               <p className="eyebrow">{item.senderType}</p>
               <p>{item.content}</p>
@@ -129,7 +169,10 @@ export function SessionDetailPage() {
           <Button
             onClick={() =>
               sendMessageMutation.mutate(message, {
-                onSuccess: () => setMessage(""),
+                onSuccess: () => {
+                  shouldStickToBottomRef.current = true;
+                  setMessage("");
+                },
               })
             }
             disabled={isLocked || !message.trim() || sendMessageMutation.isPending}
@@ -140,11 +183,7 @@ export function SessionDetailPage() {
             type="button"
             variant="ghost"
             disabled={finishMutation.isPending}
-            onClick={() =>
-              finishMutation.mutate(undefined, {
-                onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
-              })
-            }
+            onClick={handleFinish}
           >
             {finishMutation.isPending ? "Готовим отчет..." : "Завершить и перейти к отчету"}
           </Button>

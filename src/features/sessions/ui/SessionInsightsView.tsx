@@ -3,10 +3,9 @@ import { Link } from "react-router-dom";
 import { InterviewDirection, InterviewLevel, SessionState } from "@/api/generated/schema";
 import { useProgress } from "@/features/progress/hooks/useProgress";
 import { ProgressTrendChart } from "@/features/progress/ui/ProgressTrendChart";
-import { type HistoryFilters } from "@/features/sessions/api/sessions.api";
 import { useHistory } from "@/features/sessions/hooks/useSession";
 import { formatDateTime, formatDuration } from "@/shared/lib/format";
-import { directionOptions, levelOptions, sessionStateOptions } from "@/shared/lib/options";
+import { directionOptions, levelOptions } from "@/shared/lib/options";
 import { Badge, Button, Card, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
 
 type SessionInsightsViewProps = {
@@ -36,8 +35,6 @@ export function SessionInsightsView({ eyebrow, title, description, actions }: Se
     level: "" as InterviewLevel | "",
   });
   const [historyFilters, setHistoryFilters] = useState({
-    state: "" as SessionState | "",
-    profileId: "",
     page: 0,
     size: 20,
   });
@@ -61,7 +58,7 @@ export function SessionInsightsView({ eyebrow, title, description, actions }: Se
     <div className="grid">
       <PageHeader eyebrow={eyebrow} title={title} description={description} actions={actions} />
       <Card>
-        <div className="filters">
+        <div className="filters filters-grid">
           <Input
             label="С"
             type="datetime-local"
@@ -85,17 +82,6 @@ export function SessionInsightsView({ eyebrow, title, description, actions }: Se
             options={levelOptions}
             value={sharedFilters.level}
             onChange={(event) => updateSharedFilters({ level: event.target.value as InterviewLevel | "" })}
-          />
-          <Select
-            label="Статус"
-            options={sessionStateOptions}
-            value={historyFilters.state}
-            onChange={(event) => updateHistoryFilters({ state: event.target.value as SessionState | "", page: 0 })}
-          />
-          <Input
-            label="Profile ID"
-            value={historyFilters.profileId}
-            onChange={(event) => updateHistoryFilters({ profileId: event.target.value, page: 0 })}
           />
         </div>
       </Card>

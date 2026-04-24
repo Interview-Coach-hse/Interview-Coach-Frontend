@@ -4,15 +4,14 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 import { useAdminProfileEditor } from "@/features/admin/hooks/useAdmin";
-import { InterviewDirection, InterviewLevel } from "@/api/generated/schema";
-import { directionOptions, levelOptions } from "@/shared/lib/options";
+import { useCatalogs } from "@/features/catalogs/hooks/useCatalogs";
 import { Badge, Button, Card, ErrorState, Input, Loader, PageHeader, QuestionPicker, Select, Textarea, useToast } from "@/shared/ui";
 
 const schema = z.object({
   title: z.string().min(3, "Минимум 3 символа"),
   description: z.string().min(10, "Минимум 10 символов"),
-  direction: z.nativeEnum(InterviewDirection),
-  level: z.nativeEnum(InterviewLevel),
+  direction: z.string().min(1, "Выберите направление"),
+  level: z.string().min(1, "Выберите уровень"),
   tags: z.string().optional(),
 });
 
@@ -26,6 +25,7 @@ export function AdminProfileEditPage() {
   const { profileId } = useParams();
   const navigate = useNavigate();
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const { directionSelectOptions, levelSelectOptions, isLoading: catalogsLoading, isError: catalogsError, error: catalogsErrorValue } = useCatalogs();
   const { showToast } = useToast();
   const {
     profileQuery,
@@ -42,8 +42,8 @@ export function AdminProfileEditPage() {
     () => ({
       title: "",
       description: "",
-      direction: InterviewDirection.Backend,
-      level: InterviewLevel.Junior,
+      direction: "",
+      level: "",
       tags: "",
     }),
     [],
@@ -108,8 +108,8 @@ export function AdminProfileEditPage() {
     reset({
       title: profileQuery.data.title ?? "",
       description: profileQuery.data.description ?? "",
-      direction: profileQuery.data.direction ?? InterviewDirection.Backend,
-      level: profileQuery.data.level ?? InterviewLevel.Junior,
+      direction: profileQuery.data.direction ?? "",
+      level: profileQuery.data.level ?? "",
       tags: profileQuery.data.tags?.join(", ") ?? "",
     });
   }, [defaults, profileQuery.data, reset]);
@@ -130,6 +130,14 @@ export function AdminProfileEditPage() {
     return <Loader />;
   }
 
+  if (catalogsLoading) {
+    return <Loader />;
+  }
+
+  if (catalogsError) {
+    return <ErrorState error={catalogsErrorValue} retry={() => window.location.reload()} />;
+  }
+
   if (profileQuery.isError || linksQuery.isError || questionsQuery.isError) {
     return <ErrorState error={profileQuery.error ?? linksQuery.error ?? questionsQuery.error} retry={() => {
       void profileQuery.refetch();
@@ -147,7 +155,7 @@ export function AdminProfileEditPage() {
             const payload = {
               ...values,
               tags: values.tags?.split(",").map((item) => item.trim()).filter(Boolean),
-            };
+            } as Parameters<typeof saveMutation.mutateAsync>[0];
             const savedProfile = await saveMutation.mutateAsync(payload);
             showToast(profileId ? "Профиль обновлён" : "Профиль создан");
 
@@ -162,13 +170,13 @@ export function AdminProfileEditPage() {
             <Select
               label="Направление"
               error={errors.direction?.message}
-              options={directionOptions.filter((item) => item.value)}
+              options={directionSelectOptions}
               {...register("direction")}
             />
             <Select
               label="Уровень"
               error={errors.level?.message}
-              options={levelOptions.filter((item) => item.value)}
+              options={levelSelectOptions}
               {...register("level")}
             />
           </div>

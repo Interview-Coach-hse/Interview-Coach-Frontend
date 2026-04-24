@@ -1,17 +1,23 @@
 import { useParams } from "react-router-dom";
+import { useCatalogs } from "@/features/catalogs/hooks/useCatalogs";
 import { useAdminUser } from "@/features/admin/hooks/useAdmin";
 import { Badge, Card, ErrorState, Loader, PageHeader } from "@/shared/ui";
 
 export function AdminUserDetailPage() {
   const { userId } = useParams();
+  const { getDirectionName, getLevelName, isLoading: catalogsLoading, isError: catalogsError, error: catalogsErrorValue } = useCatalogs();
   const query = useAdminUser(userId);
 
-  if (query.isLoading) {
+  if (query.isLoading || catalogsLoading) {
     return <Loader />;
   }
 
   if (query.isError) {
     return <ErrorState error={query.error} retry={() => query.refetch()} />;
+  }
+
+  if (catalogsError) {
+    return <ErrorState error={catalogsErrorValue} retry={() => window.location.reload()} />;
   }
 
   return (
@@ -41,11 +47,11 @@ export function AdminUserDetailPage() {
           </div>
           <div>
             <p className="eyebrow">Предпочтительное направление</p>
-            <p>{query.data?.preference?.preferredDirection ?? "—"}</p>
+            <p>{getDirectionName(query.data?.preference?.preferredDirection)}</p>
           </div>
           <div>
             <p className="eyebrow">Предпочтительный уровень</p>
-            <p>{query.data?.preference?.preferredLevel ?? "—"}</p>
+            <p>{getLevelName(query.data?.preference?.preferredLevel)}</p>
           </div>
           <div>
             <p className="eyebrow">Язык интервью</p>

@@ -1,15 +1,9 @@
 import { request } from "@/api";
-import type {
-  PageProfileResponse,
-  ProfileResponse,
-  InterviewDirection,
-  InterviewLevel,
-  UUID,
-} from "@/api/generated/schema";
+import type { PageProfileResponse, ProfileResponse, UUID } from "@/api/generated/schema";
 
 export type ProfilesFilters = {
-  direction?: InterviewDirection | "";
-  level?: InterviewLevel | "";
+  direction?: string;
+  level?: string;
   query?: string;
   tag?: string;
   page?: number;

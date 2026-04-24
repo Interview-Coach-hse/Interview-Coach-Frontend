@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { InterviewDirection, InterviewLevel } from "@/api/generated/schema";
 import type { ProfilesFilters } from "@/features/profiles/api/profiles.api";
 import { useAdminProfiles } from "@/features/admin/hooks/useAdmin";
+import { useCatalogs } from "@/features/catalogs/hooks/useCatalogs";
 import { formatDateTime } from "@/shared/lib/format";
-import { directionOptions, levelOptions } from "@/shared/lib/options";
 import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
 
 export function AdminProfilesPage() {
+  const { directionOptions, levelOptions, isLoading: catalogsLoading, isError: catalogsError, error: catalogsErrorValue, getDirectionName, getLevelName } = useCatalogs();
   const [filters, setFilters] = useState<ProfilesFilters>({
     direction: "",
     level: "",
@@ -31,6 +31,14 @@ export function AdminProfilesPage() {
 
   const profiles = query.data?.items ?? [];
 
+  if (catalogsLoading) {
+    return <Loader />;
+  }
+
+  if (catalogsError) {
+    return <ErrorState error={catalogsErrorValue} retry={() => window.location.reload()} />;
+  }
+
   return (
     <div className="grid">
       <PageHeader
@@ -49,7 +57,7 @@ export function AdminProfilesPage() {
             options={directionOptions}
             value={filters.direction}
             onChange={(event) =>
-              setFilters((prev) => ({ ...prev, direction: event.target.value as InterviewDirection | "", page: 0 }))
+              setFilters((prev) => ({ ...prev, direction: event.target.value, page: 0 }))
             }
           />
           <Select
@@ -57,7 +65,7 @@ export function AdminProfilesPage() {
             options={levelOptions}
             value={filters.level}
             onChange={(event) =>
-              setFilters((prev) => ({ ...prev, level: event.target.value as InterviewLevel | "", page: 0 }))
+              setFilters((prev) => ({ ...prev, level: event.target.value, page: 0 }))
             }
           />
           <Input
@@ -88,7 +96,7 @@ export function AdminProfilesPage() {
           <Card key={profile.id}>
             <div className="list-item">
               <div>
-                <p className="eyebrow">{profile.direction}</p>
+                <p className="eyebrow">{getDirectionName(profile.direction)}</p>
                 <h3>{profile.title}</h3>
                 <p className="muted">{profile.description}</p>
                 <p className="muted">
@@ -102,7 +110,7 @@ export function AdminProfilesPage() {
                 </div>
               </div>
               <div className="inline-actions">
-                <Badge tone="accent">{profile.level ?? "—"}</Badge>
+                <Badge tone="accent">{getLevelName(profile.level)}</Badge>
                 <Badge>{profile.status ?? "—"}</Badge>
                 <Link className="ghost-link" to={`/admin/profiles/${profile.id}/edit`}>
                   Редактировать

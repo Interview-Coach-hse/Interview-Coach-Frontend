@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { sessionsApi } from "@/features/sessions/api/sessions.api";
 import { authStore } from "@/features/auth/hooks/auth-store";
+import { useCatalogs } from "@/features/catalogs/hooks/useCatalogs";
 import { useProfile } from "@/features/profiles/hooks/useProfiles";
 import { HttpError } from "@/shared/lib/error";
 import { formatDateTime } from "@/shared/lib/format";
@@ -13,6 +14,7 @@ export function ProfileDetailsPage() {
   const navigate = useNavigate();
   const tokens = authStore((state) => state.tokens);
   const [showAuthNotice, setShowAuthNotice] = useState(false);
+  const { getDirectionName, getLevelName, isLoading: catalogsLoading, isError: catalogsError, error: catalogsErrorValue } = useCatalogs();
   const profileQuery = useProfile(profileId);
   const createSession = useMutation({
     mutationFn: () => sessionsApi.create({ profileId: profileId! }),
@@ -59,12 +61,16 @@ export function ProfileDetailsPage() {
     createSession.mutate();
   };
 
-  if (profileQuery.isLoading) {
+  if (profileQuery.isLoading || catalogsLoading) {
     return <Loader />;
   }
 
   if (profileQuery.isError) {
     return <ErrorState error={profileQuery.error} retry={() => profileQuery.refetch()} />;
+  }
+
+  if (catalogsError) {
+    return <ErrorState error={catalogsErrorValue} retry={() => window.location.reload()} />;
   }
 
   const profile = profileQuery.data;
@@ -80,7 +86,7 @@ export function ProfileDetailsPage() {
       </Link>
       <Card>
         <PageHeader
-          eyebrow={profile.direction}
+          eyebrow={getDirectionName(profile.direction)}
           title={profile.title ?? "Профиль"}
           description={profile.description ?? "Описание профиля"}
           actions={
@@ -93,7 +99,7 @@ export function ProfileDetailsPage() {
           {profile.tags?.map((tag) => (
             <Badge key={tag}>{tag}</Badge>
           ))}
-          <Badge tone="accent">{profile.level ?? "—"}</Badge>
+          <Badge tone="accent">{getLevelName(profile.level)}</Badge>
           <Badge tone="warning">{profile.status ?? "—"}</Badge>
         </div>
         <p className="muted" style={{ marginTop: "1rem" }}>

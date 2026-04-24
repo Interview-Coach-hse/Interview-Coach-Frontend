@@ -1,7 +1,5 @@
 import { request } from "@/api";
 import type {
-  InterviewDirection,
-  InterviewLevel,
   AdminUserResponse,
   AdminUserUpdateRequest,
   PageProfileResponse,
@@ -22,8 +20,8 @@ export type QuestionSortDir = "asc" | "desc";
 export type AdminQuestionsFilters = {
   query?: string;
   search?: string;
-  direction?: InterviewDirection | "";
-  difficulty?: InterviewLevel | "";
+  direction?: string;
+  difficulty?: string;
   questionType?: QuestionType | "";
   status?: QuestionStatus | "";
   excludeProfileId?: UUID;

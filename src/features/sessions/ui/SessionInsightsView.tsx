@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { InterviewDirection, InterviewLevel, SessionState } from "@/api/generated/schema";
+import { SessionState } from "@/api/generated/schema";
+import { useCatalogs } from "@/features/catalogs/hooks/useCatalogs";
 import { useProgress } from "@/features/progress/hooks/useProgress";
 import { ProgressTrendChart } from "@/features/progress/ui/ProgressTrendChart";
 import { useHistory } from "@/features/sessions/hooks/useSession";
 import { formatDateTime, formatDuration } from "@/shared/lib/format";
-import { directionOptions, levelOptions } from "@/shared/lib/options";
 import { Badge, Button, Card, ErrorState, Input, Loader, PageHeader, Select } from "@/shared/ui";
 
 type SessionInsightsViewProps = {
@@ -28,11 +28,12 @@ function getSessionLink(sessionId?: string, state?: SessionState) {
 }
 
 export function SessionInsightsView({ eyebrow, title, description, actions }: SessionInsightsViewProps) {
+  const { directionOptions, levelOptions, isLoading: catalogsLoading, isError: catalogsError, error: catalogsErrorValue, getDirectionName, getLevelName } = useCatalogs();
   const [sharedFilters, setSharedFilters] = useState({
     createdFrom: "",
     createdTo: "",
-    direction: "" as InterviewDirection | "",
-    level: "" as InterviewLevel | "",
+    direction: "",
+    level: "",
   });
   const [historyFilters, setHistoryFilters] = useState({
     page: 0,
@@ -44,6 +45,14 @@ export function SessionInsightsView({ eyebrow, title, description, actions }: Se
     ...sharedFilters,
     ...historyFilters,
   });
+
+  if (catalogsLoading) {
+    return <Loader />;
+  }
+
+  if (catalogsError) {
+    return <ErrorState error={catalogsErrorValue} retry={() => window.location.reload()} />;
+  }
 
   const updateSharedFilters = (patch: Partial<typeof sharedFilters>) => {
     setSharedFilters((prev) => ({ ...prev, ...patch }));
@@ -75,13 +84,13 @@ export function SessionInsightsView({ eyebrow, title, description, actions }: Se
             label="Направление"
             options={directionOptions}
             value={sharedFilters.direction}
-            onChange={(event) => updateSharedFilters({ direction: event.target.value as InterviewDirection | "" })}
+            onChange={(event) => updateSharedFilters({ direction: event.target.value })}
           />
           <Select
             label="Уровень"
             options={levelOptions}
             value={sharedFilters.level}
-            onChange={(event) => updateSharedFilters({ level: event.target.value as InterviewLevel | "" })}
+            onChange={(event) => updateSharedFilters({ level: event.target.value })}
           />
         </div>
       </Card>
@@ -124,7 +133,7 @@ export function SessionInsightsView({ eyebrow, title, description, actions }: Se
               <div className="session-history-card-copy">
                 <h3>{session.profileTitle ?? "Сессия"}</h3>
                 <p className="muted">
-                  {[session.directionSnapshot, session.levelSnapshot].filter(Boolean).join(" • ") || "Снимок профиля недоступен"}
+                  {[getDirectionName(session.directionSnapshot), getLevelName(session.levelSnapshot)].filter((value) => value !== "—").join(" • ") || "Снимок профиля недоступен"}
                 </p>
                 <p className="muted">Старт: {formatDateTime(session.startedAt)}</p>
                 <p className="muted">Финиш: {formatDateTime(session.finishedAt)}</p>

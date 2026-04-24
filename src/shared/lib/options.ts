@@ -1,24 +1,4 @@
-import {
-  InterviewDirection,
-  InterviewLevel,
-  QuestionStatus,
-  QuestionType,
-  SessionState,
-  UserStatus,
-} from "@/api/generated/schema";
-
-export const directionOptions = [
-  { value: "", label: "Все направления" },
-  { value: InterviewDirection.Backend, label: "Backend" },
-  { value: InterviewDirection.Frontend, label: "Frontend" },
-  { value: InterviewDirection.Devops, label: "DevOps" },
-];
-
-export const levelOptions = [
-  { value: "", label: "Все уровни" },
-  { value: InterviewLevel.Junior, label: "Junior" },
-  { value: InterviewLevel.Middle, label: "Middle" },
-];
+import { QuestionStatus, QuestionType, SessionState, UserStatus } from "@/api/generated/schema";
 
 export const sessionStateOptions = [
   { value: "", label: "Все статусы" },

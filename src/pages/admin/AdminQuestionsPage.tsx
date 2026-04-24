@@ -4,23 +4,25 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { InterviewDirection, InterviewLevel, QuestionStatus, QuestionType } from "@/api/generated/schema";
+import { QuestionStatus, QuestionType } from "@/api/generated/schema";
 import { adminApi, type ImportResponse } from "@/features/admin/api/admin.api";
+import { useCatalogs } from "@/features/catalogs/hooks/useCatalogs";
 import { useAdminQuestions } from "@/features/admin/hooks/useAdmin";
 import { normalizeError } from "@/shared/lib/error";
-import { directionOptions, levelOptions, questionStatusOptions, questionTypeOptions } from "@/shared/lib/options";
+import { questionStatusOptions, questionTypeOptions } from "@/shared/lib/options";
 import { Badge, Button, Card, ErrorState, Loader, PageHeader, Select, Textarea, useToast } from "@/shared/ui";
 
 const schema = z.object({
   text: z.string().min(10, "Минимум 10 символов"),
   questionType: z.nativeEnum(QuestionType),
-  difficulty: z.nativeEnum(InterviewLevel),
-  direction: z.nativeEnum(InterviewDirection),
+  difficulty: z.string().min(1, "Выберите уровень"),
+  direction: z.string().min(1, "Выберите направление"),
   status: z.nativeEnum(QuestionStatus),
 });
 
 export function AdminQuestionsPage() {
   const navigate = useNavigate();
+  const { directionSelectOptions, levelSelectOptions, isLoading: catalogsLoading, isError: catalogsError, error: catalogsErrorValue, getLevelName } = useCatalogs();
   const [page, setPage] = useState(0);
   const [showImportModal, setShowImportModal] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -48,8 +50,8 @@ export function AdminQuestionsPage() {
     defaultValues: {
       text: "",
       questionType: QuestionType.Technical,
-      difficulty: InterviewLevel.Junior,
-      direction: InterviewDirection.Backend,
+      difficulty: "",
+      direction: "",
       status: QuestionStatus.Active,
     },
   });
@@ -88,8 +90,8 @@ export function AdminQuestionsPage() {
     reset({
       text: "",
       questionType: QuestionType.Technical,
-      difficulty: InterviewLevel.Junior,
-      direction: InterviewDirection.Backend,
+      difficulty: "",
+      direction: "",
       status: QuestionStatus.Active,
     });
   };
@@ -128,6 +130,14 @@ export function AdminQuestionsPage() {
     return <Loader />;
   }
 
+  if (catalogsLoading) {
+    return <Loader />;
+  }
+
+  if (catalogsError) {
+    return <ErrorState error={catalogsErrorValue} retry={() => window.location.reload()} />;
+  }
+
   if (listQuery.isError) {
     return <ErrorState error={listQuery.error} retry={() => listQuery.refetch()} />;
   }
@@ -157,11 +167,13 @@ export function AdminQuestionsPage() {
         <form
           ref={formRef}
           onSubmit={handleSubmit(async (values) => {
+            const payload = values as Parameters<typeof createMutation.mutateAsync>[0];
+
             if (editingQuestionId) {
-              await updateMutation.mutateAsync({ id: editingQuestionId, payload: values });
+              await updateMutation.mutateAsync({ id: editingQuestionId, payload });
               showToast("Вопрос обновлён");
             } else {
-              await createMutation.mutateAsync(values);
+              await createMutation.mutateAsync(payload);
               showToast("Вопрос добавлен");
             }
 
@@ -174,13 +186,13 @@ export function AdminQuestionsPage() {
             <Select
               label="Уровень"
               error={errors.difficulty?.message}
-              options={levelOptions.filter((item) => item.value)}
+              options={levelSelectOptions}
               {...register("difficulty")}
             />
             <Select
               label="Направление"
               error={errors.direction?.message}
-              options={directionOptions.filter((item) => item.value)}
+              options={directionSelectOptions}
               {...register("direction")}
             />
             <Select label="Статус" error={errors.status?.message} options={questionStatusOptions} {...register("status")} />
@@ -233,7 +245,7 @@ export function AdminQuestionsPage() {
               <tr key={item.id}>
                 <td>{item.text}</td>
                 <td>{item.questionType}</td>
-                <td>{item.difficulty}</td>
+                <td>{getLevelName(item.difficulty)}</td>
                 <td>
                   <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
                     <Button
@@ -249,8 +261,8 @@ export function AdminQuestionsPage() {
                         reset({
                           text: item.text ?? "",
                           questionType: item.questionType ?? QuestionType.Technical,
-                          difficulty: item.difficulty ?? InterviewLevel.Junior,
-                          direction: item.direction ?? InterviewDirection.Backend,
+                          difficulty: item.difficulty ?? "",
+                          direction: item.direction ?? "",
                           status: item.status ?? QuestionStatus.Active,
                         });
                         formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });

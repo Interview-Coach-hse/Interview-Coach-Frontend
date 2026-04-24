@@ -4,9 +4,9 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { authStore } from "@/features/auth/hooks/auth-store";
+import { useCatalogs } from "@/features/catalogs/hooks/useCatalogs";
 import { useCurrentUser } from "@/features/user/hooks/useCurrentUser";
-import { directionOptions, levelOptions } from "@/shared/lib/options";
-import { Button, Card, Input, PageHeader, Select, useToast } from "@/shared/ui";
+import { Button, Card, ErrorState, Input, Loader, PageHeader, Select, useToast } from "@/shared/ui";
 
 const schema = z.object({
   firstName: z.string().optional(),
@@ -18,6 +18,7 @@ const schema = z.object({
 export function SettingsPage() {
   const navigate = useNavigate();
   const clearSession = authStore((state) => state.clearSession);
+  const { directionOptions, levelOptions, isLoading: catalogsLoading, isError: catalogsError, error: catalogsErrorValue } = useCatalogs();
   const { query, updateMutation } = useCurrentUser();
   const { showToast } = useToast();
   const { register, handleSubmit, reset } = useForm<z.infer<typeof schema>>({
@@ -34,6 +35,18 @@ export function SettingsPage() {
       });
     }
   }, [query.data, reset]);
+
+  if (query.isLoading || catalogsLoading) {
+    return <Loader />;
+  }
+
+  if (query.isError) {
+    return <ErrorState error={query.error} retry={() => query.refetch()} />;
+  }
+
+  if (catalogsError) {
+    return <ErrorState error={catalogsErrorValue} retry={() => window.location.reload()} />;
+  }
 
   return (
     <div className="grid">

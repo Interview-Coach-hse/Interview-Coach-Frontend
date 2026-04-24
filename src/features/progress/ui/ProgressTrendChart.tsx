@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ScoreSource, type ProgressResponse } from "@/api/generated/schema";
 import { formatDateTime } from "@/shared/lib/format";
 import { Badge, Card } from "@/shared/ui";
@@ -10,12 +12,10 @@ type ProgressTrendChartProps = {
 
 const WIDTH = 880;
 const HEIGHT = 280;
-const PADDING_X = 28;
-const PADDING_Y = 26;
-
-function getPointTone(scoreSource?: ScoreSource | null) {
-  return scoreSource === ScoreSource.Fallback ? "warning" : "accent";
-}
+const PADDING_LEFT = 72;
+const PADDING_RIGHT = 32;
+const PADDING_TOP = 24;
+const PADDING_BOTTOM = 44;
 
 function buildPath(points: { x: number; y: number }[]) {
   if (!points.length) {
@@ -65,14 +65,16 @@ function mapPoints(points: ScoreTrendPoint[]) {
   return points.map((point, index) => {
     const x = points.length === 1
       ? WIDTH / 2
-      : PADDING_X + ((WIDTH - PADDING_X * 2) * index) / Math.max(points.length - 1, 1);
-    const y = HEIGHT - PADDING_Y - (((point.score ?? 0) - min) / span) * (HEIGHT - PADDING_Y * 2);
+      : PADDING_LEFT + ((WIDTH - PADDING_LEFT - PADDING_RIGHT) * index) / Math.max(points.length - 1, 1);
+    const y = HEIGHT - PADDING_BOTTOM - (((point.score ?? 0) - min) / span) * (HEIGHT - PADDING_TOP - PADDING_BOTTOM);
 
     return { ...point, x, y };
   });
 }
 
 export function ProgressTrendChart({ data }: ProgressTrendChartProps) {
+  const navigate = useNavigate();
+  const [activePoint, setActivePoint] = useState<(ScoreTrendPoint & { x: number; y: number }) | null>(null);
   const points = [...(data?.scoreTrend ?? [])].sort((left, right) =>
     new Date(left.createdAt ?? 0).getTime() - new Date(right.createdAt ?? 0).getTime(),
   );
@@ -105,10 +107,35 @@ export function ProgressTrendChart({ data }: ProgressTrendChartProps) {
       </div>
       <div className="progress-chart-shell">
         <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="progress-chart" role="img" aria-label="График прогресса по сессиям">
-          <path d={`M ${PADDING_X} ${HEIGHT - PADDING_Y} L ${WIDTH - PADDING_X} ${HEIGHT - PADDING_Y}`} className="progress-chart-axis" />
+          <path d={`M ${PADDING_LEFT} ${HEIGHT - PADDING_BOTTOM} L ${WIDTH - PADDING_RIGHT} ${HEIGHT - PADDING_BOTTOM}`} className="progress-chart-axis" />
+          <path d={`M ${PADDING_LEFT} ${PADDING_TOP} L ${PADDING_LEFT} ${HEIGHT - PADDING_BOTTOM}`} className="progress-chart-axis" />
+          <text x={WIDTH / 2} y={HEIGHT - 10} textAnchor="middle" className="progress-chart-axis-label">
+            Дата
+          </text>
+          <text
+            x={20}
+            y={HEIGHT / 2}
+            textAnchor="middle"
+            transform={`rotate(-90 20 ${HEIGHT / 2})`}
+            className="progress-chart-axis-label"
+          >
+            Балл
+          </text>
           {chartPoints.length > 1 ? (
             <path d={buildPath(chartPoints)} className="progress-chart-line" />
           ) : null}
+          {[0, 50, 100].map((score) => {
+            const y = HEIGHT - PADDING_BOTTOM - (score / 100) * (HEIGHT - PADDING_TOP - PADDING_BOTTOM);
+
+            return (
+              <g key={score}>
+                <path d={`M ${PADDING_LEFT} ${y} L ${WIDTH - PADDING_RIGHT} ${y}`} className="progress-chart-grid" />
+                <text x={PADDING_LEFT - 12} y={y + 4} textAnchor="end" className="progress-chart-tick">
+                  {score}
+                </text>
+              </g>
+            );
+          })}
           {chartPoints.map((point) => (
             <circle
               key={`${point.sessionId}-${point.createdAt}`}
@@ -116,27 +143,40 @@ export function ProgressTrendChart({ data }: ProgressTrendChartProps) {
               cy={point.y}
               r={6}
               className={`progress-chart-point progress-chart-point-${point.scoreSource === ScoreSource.Fallback ? "fallback" : "ai"}`}
-            >
-              <title>
-                {[
-                  formatDateTime(point.createdAt),
-                  `Балл: ${point.score ?? "—"}`,
-                  `Направление: ${point.direction ?? "—"}`,
-                  `Уровень: ${point.level ?? "—"}`,
-                  `Источник: ${point.scoreSource ?? "—"}`,
-                ].join("\n")}
-              </title>
-            </circle>
+              role="button"
+              tabIndex={0}
+              onMouseEnter={() => setActivePoint(point)}
+              onMouseLeave={() => setActivePoint((current) => (current?.sessionId === point.sessionId ? null : current))}
+              onFocus={() => setActivePoint(point)}
+              onBlur={() => setActivePoint((current) => (current?.sessionId === point.sessionId ? null : current))}
+              onClick={() => {
+                if (point.sessionId) {
+                  navigate(`/app/history/${point.sessionId}`);
+                }
+              }}
+              onKeyDown={(event) => {
+                if ((event.key === "Enter" || event.key === " ") && point.sessionId) {
+                  event.preventDefault();
+                  navigate(`/app/history/${point.sessionId}`);
+                }
+              }}
+            />
           ))}
         </svg>
-      </div>
-      <div className="progress-chart-labels">
-        {points.map((point) => (
-          <div key={`${point.sessionId}-label`} className="progress-chart-label">
-            <span>{formatDateTime(point.createdAt)}</span>
-            <Badge tone={getPointTone(point.scoreSource)}>{point.score !== null && point.score !== undefined ? String(point.score) : "—"}</Badge>
+        {activePoint ? (
+          <div
+            className="progress-chart-tooltip"
+            style={{
+              left: `${(activePoint.x / WIDTH) * 100}%`,
+              top: `${(activePoint.y / HEIGHT) * 100}%`,
+            }}
+          >
+            <strong>{formatDateTime(activePoint.createdAt)}</strong>
+            <span>Балл: {activePoint.score ?? "—"}</span>
+            <span>Уровень: {activePoint.level ?? "—"}</span>
+            <span>Направление: {activePoint.direction ?? "—"}</span>
           </div>
-        ))}
+        ) : null}
       </div>
     </Card>
   );

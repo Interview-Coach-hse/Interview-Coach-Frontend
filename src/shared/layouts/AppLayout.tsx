@@ -5,7 +5,6 @@ import { useTopbarState } from "@/shared/lib/useTopbarState";
 
 const links = [
   { to: "/app/dashboard", label: "Дашборд" },
-  { to: "/app/history", label: "История" },
   { to: "/app/profiles", label: "Сценарии" },
 ];
 

@@ -4,7 +4,6 @@ import { useTopbarState } from "@/shared/lib/useTopbarState";
 
 const publicLinks = [
   { to: "/profiles", label: "Сценарии" },
-  { to: "/app/history", label: "История" },
   { to: "/app/settings", label: "Профиль" },
 ];
 

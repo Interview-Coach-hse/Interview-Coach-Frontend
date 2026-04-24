@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { SessionState } from "@/api/generated/schema";
+import { useProfile } from "@/features/profiles/hooks/useProfiles";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { Button, Card, ErrorState, Loader, PageHeader, Textarea } from "@/shared/ui";
 
@@ -13,6 +14,7 @@ export function SessionDetailPage() {
   const shouldStickToBottomRef = useRef(true);
   const { sessionQuery, messagesQuery, startMutation, pauseMutation, resumeMutation, cancelMutation, finishMutation, sendMessageMutation } =
     useSession(sessionId);
+  const profileQuery = useProfile(sessionQuery.data?.profileId);
 
   const state = sessionQuery.data?.state;
   const messages = messagesQuery.data?.items ?? [];
@@ -20,6 +22,9 @@ export function SessionDetailPage() {
   const isInProgress = state === SessionState.InProgress;
   const isPaused = state === SessionState.Paused;
   const isLocked = !isInProgress;
+  const totalQuestions = profileQuery.data?.questions?.length ?? 0;
+  const currentQuestionIndex = sessionQuery.data?.currentQuestionIndex ?? null;
+  const isAnsweringLastQuestion = currentQuestionIndex !== null && totalQuestions > 0 && currentQuestionIndex >= totalQuestions - 1;
 
   const scrollMessagesToBottom = (behavior: ScrollBehavior = "smooth") => {
     const node = messageListRef.current;
@@ -105,6 +110,19 @@ export function SessionDetailPage() {
     );
   }
 
+  const handleSubmitAnswer = () => {
+    sendMessageMutation.mutate(message, {
+      onSuccess: () => {
+        shouldStickToBottomRef.current = true;
+        setMessage("");
+
+        if (isAnsweringLastQuestion) {
+          handleFinish();
+        }
+      },
+    });
+  };
+
   return (
     <div className="grid session-page">
       <PageHeader
@@ -166,26 +184,21 @@ export function SessionDetailPage() {
         </div>
         <div className="inline-actions">
           <Button
-            onClick={() =>
-              sendMessageMutation.mutate(message, {
-                onSuccess: () => {
-                  shouldStickToBottomRef.current = true;
-                  setMessage("");
-                },
-              })
-            }
+            onClick={handleSubmitAnswer}
             disabled={isLocked || !message.trim() || sendMessageMutation.isPending}
           >
-            Отправить
+            {isAnsweringLastQuestion ? "Отправить и завершить" : "Отправить"}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={finishMutation.isPending}
-            onClick={handleFinish}
-          >
-            {finishMutation.isPending ? "Готовим отчет..." : "Завершить и перейти к отчету"}
-          </Button>
+          {!isAnsweringLastQuestion ? (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={finishMutation.isPending}
+              onClick={handleFinish}
+            >
+              {finishMutation.isPending ? "Готовим отчет..." : "Завершить и перейти к отчету"}
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>

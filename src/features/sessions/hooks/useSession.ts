@@ -17,7 +17,7 @@ export function useSession(sessionId?: string) {
     enabled: Boolean(sessionId),
     refetchInterval: (query) => {
       const state = query.state.data?.state;
-      return state === "PROCESSING" ? 5000 : false;
+      return state === "PROCESSING" ? 3000 : false;
     },
   });
 

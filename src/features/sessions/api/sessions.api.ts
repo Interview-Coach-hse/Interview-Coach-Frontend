@@ -1,6 +1,8 @@
 import { request } from "@/api";
 import type {
   CreateSessionRequest,
+  InterviewDirection,
+  InterviewLevel,
   PageSessionMessageResponse,
   PageSessionResponse,
   ReportResponse,
@@ -15,6 +17,8 @@ import type {
 export type HistoryFilters = {
   state?: SessionState | "";
   profileId?: string;
+  direction?: InterviewDirection | "";
+  level?: InterviewLevel | "";
   createdFrom?: string;
   createdTo?: string;
   page?: number;

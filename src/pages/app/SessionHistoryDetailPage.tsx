@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SessionState } from "@/api/generated/schema";
+import { useSessionReport } from "@/features/sessions/hooks/useSessionReport";
+import { SessionReportSummary } from "@/features/sessions/ui/SessionReportSummary";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { formatDateTime } from "@/shared/lib/format";
 import { Badge, Card, ErrorState, Loader, PageHeader } from "@/shared/ui";
@@ -10,6 +12,13 @@ export function SessionHistoryDetailPage() {
   const navigate = useNavigate();
   const { sessionQuery, messagesQuery } = useSession(sessionId);
   const state = sessionQuery.data?.state;
+  const reportQuery = useSessionReport(
+    sessionId,
+    Boolean(sessionId) &&
+      state !== SessionState.Created &&
+      state !== SessionState.InProgress &&
+      state !== SessionState.Paused,
+  );
 
   useEffect(() => {
     if (
@@ -60,6 +69,15 @@ export function SessionHistoryDetailPage() {
           ))}
         </div>
       </Card>
+      <div>
+        <h2 style={{ marginBottom: "1rem" }}>Отчёт по сессии</h2>
+        <SessionReportSummary
+          report={reportQuery.data}
+          isLoading={reportQuery.isLoading}
+          isError={reportQuery.isError}
+          onRetry={() => void reportQuery.refetch()}
+        />
+      </div>
     </div>
   );
 }

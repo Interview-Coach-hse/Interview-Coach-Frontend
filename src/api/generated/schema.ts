@@ -226,6 +226,8 @@ export type SessionResponse = {
   id?: UUID;
   profileId?: UUID;
   profileTitle?: string;
+  directionSnapshot?: InterviewDirection | null;
+  levelSnapshot?: InterviewLevel | null;
   state?: SessionState;
   currentQuestionIndex?: number | null;
   startedAt?: string | null;
@@ -277,6 +279,14 @@ export type ProgressResponse = {
   finishedSessions?: number;
   averageScore?: number | null;
   reportsReady?: number;
+  scoreTrend?: {
+    sessionId?: UUID;
+    createdAt?: string;
+    score?: number | null;
+    direction?: InterviewDirection | null;
+    level?: InterviewLevel | null;
+    scoreSource?: ScoreSource | null;
+  }[];
 };
 
 export type PageProfileResponse = {
@@ -293,6 +303,7 @@ export type PageSessionResponse = {
   page?: number;
   size?: number;
   totalItems?: number;
+  totalElements?: number;
   totalPages?: number;
   hasNext?: boolean;
 };

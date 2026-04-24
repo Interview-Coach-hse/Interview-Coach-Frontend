@@ -1,10 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { request } from "@/api";
-import type { ProgressResponse } from "@/api/generated/schema";
+import type { InterviewDirection, InterviewLevel, ProgressResponse } from "@/api/generated/schema";
 
-export function useProgress() {
+export type ProgressFilters = {
+  createdFrom?: string;
+  createdTo?: string;
+  direction?: InterviewDirection | "";
+  level?: InterviewLevel | "";
+};
+
+export function useProgress(filters: ProgressFilters = {}) {
   return useQuery({
-    queryKey: ["progress"],
-    queryFn: () => request<ProgressResponse>("/progress"),
+    queryKey: ["progress", filters],
+    queryFn: () => request<ProgressResponse>("/progress", { query: filters }),
   });
 }

@@ -8,7 +8,7 @@ export function useSessionReport(sessionId?: string, enabled = true) {
     enabled: Boolean(sessionId) && enabled,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      return status === "PENDING" ? 5000 : false;
+      return status === "PENDING" ? 3000 : false;
     },
   });
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { SessionState } from "@/api/generated/schema";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { Button, Card, ErrorState, Loader, PageHeader, Textarea } from "@/shared/ui";
@@ -9,7 +9,7 @@ export function SessionDetailPage() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const autoStartAttemptedRef = useRef(false);
-  const { sessionQuery, messagesQuery, startMutation, pauseMutation, resumeMutation, cancelMutation, sendMessageMutation } =
+  const { sessionQuery, messagesQuery, startMutation, pauseMutation, resumeMutation, cancelMutation, finishMutation, sendMessageMutation } =
     useSession(sessionId);
 
   const state = sessionQuery.data?.state;
@@ -56,6 +56,20 @@ export function SessionDetailPage() {
     );
   }
 
+  if (finishMutation.isError) {
+    return (
+      <ErrorState
+        error={finishMutation.error}
+        retry={() => {
+          finishMutation.reset();
+          finishMutation.mutate(undefined, {
+            onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
+          });
+        }}
+      />
+    );
+  }
+
   return (
     <div className="grid session-page">
       <PageHeader
@@ -69,9 +83,14 @@ export function SessionDetailPage() {
             {state === "PAUSED" ? <Button variant="secondary" onClick={() => resumeMutation.mutate()}>Возобновить</Button> : null}
             <Button variant="danger" onClick={() => cancelMutation.mutate()}>Отменить</Button>
             <Button
-              onClick={() => navigate(`/app/sessions/${sessionId}/report`)}
+              disabled={finishMutation.isPending}
+              onClick={() =>
+                finishMutation.mutate(undefined, {
+                  onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
+                })
+              }
             >
-              Завершить
+              {finishMutation.isPending ? "Завершаем..." : "Завершить"}
             </Button>
           </div>
         }
@@ -117,9 +136,18 @@ export function SessionDetailPage() {
           >
             Отправить
           </Button>
-          <Link to={`/app/sessions/${sessionId}/report`} className="ghost-link">
-            К отчету
-          </Link>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={finishMutation.isPending}
+            onClick={() =>
+              finishMutation.mutate(undefined, {
+                onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
+              })
+            }
+          >
+            {finishMutation.isPending ? "Готовим отчет..." : "Завершить и перейти к отчету"}
+          </Button>
         </div>
       </div>
     </div>

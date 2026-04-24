@@ -3,6 +3,7 @@ import { AdminRoute, ProtectedRoute } from "@/app/router/guards";
 import { AdminLayout } from "@/shared/layouts/AdminLayout";
 import { AppLayout } from "@/shared/layouts/AppLayout";
 import { PublicLayout } from "@/shared/layouts/PublicLayout";
+import { RouteErrorBoundary } from "@/shared/ui";
 import { AdminProfilesPage } from "@/pages/admin/AdminProfilesPage";
 import { AdminProfileEditPage } from "@/pages/admin/AdminProfileEditPage";
 import { AdminQuestionsPage } from "@/pages/admin/AdminQuestionsPage";
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <PublicLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: <Navigate to="/profiles" replace /> },
       { path: "login", element: <LoginPage /> },
@@ -39,10 +41,12 @@ const router = createBrowserRouter([
   },
   {
     element: <ProtectedRoute />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         path: "/app",
         element: <AppLayout />,
+        errorElement: <RouteErrorBoundary />,
         children: [
           { index: true, element: <Navigate to="/app/dashboard" replace /> },
           { path: "dashboard", element: <DashboardPage /> },
@@ -57,10 +61,12 @@ const router = createBrowserRouter([
       },
       {
         element: <AdminRoute />,
+        errorElement: <RouteErrorBoundary />,
         children: [
           {
             path: "/admin",
             element: <AdminLayout />,
+            errorElement: <RouteErrorBoundary />,
             children: [
               { index: true, element: <Navigate to="/admin/users" replace /> },
               { path: "users", element: <AdminUsersPage /> },

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MessageType, SenderType, SessionState } from "@/api/generated/schema";
+import { SessionState } from "@/api/generated/schema";
 import { useSession } from "@/features/sessions/hooks/useSession";
 import { Button, Card, ErrorState, Loader, PageHeader, Textarea } from "@/shared/ui";
 
@@ -16,7 +16,6 @@ export function SessionDetailPage() {
 
   const state = sessionQuery.data?.state;
   const messages = messagesQuery.data?.items ?? [];
-  const lastMessage = messages.at(-1);
   const hasMessages = Boolean(messagesQuery.data?.items?.length);
   const isInProgress = state === SessionState.InProgress;
   const isPaused = state === SessionState.Paused;
@@ -61,6 +60,14 @@ export function SessionDetailPage() {
     startMutation.mutate();
   }, [hasMessages, startMutation, state]);
 
+  useEffect(() => {
+    if (shouldStickToBottomRef.current) {
+      requestAnimationFrame(() => {
+        scrollMessagesToBottom(messages.length > 1 ? "smooth" : "auto");
+      });
+    }
+  }, [messages.length]);
+
   if (sessionQuery.isLoading || messagesQuery.isLoading) {
     return <Loader />;
   }
@@ -85,14 +92,6 @@ export function SessionDetailPage() {
       />
     );
   }
-
-  useEffect(() => {
-    if (shouldStickToBottomRef.current) {
-      requestAnimationFrame(() => {
-        scrollMessagesToBottom(messages.length > 1 ? "smooth" : "auto");
-      });
-    }
-  }, [messages.length]);
 
   if (finishMutation.isError) {
     return (

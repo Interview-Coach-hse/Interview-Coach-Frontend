@@ -865,6 +865,7 @@ h2 {
   display: grid;
   gap: 0.35rem;
   min-width: 200px;
+  max-width: min(320px, calc(100vw - 2rem));
   padding: 0.8rem 0.9rem;
   border: 1px solid rgba(176, 208, 255, 0.18);
   border-radius: 16px;
@@ -874,11 +875,23 @@ h2 {
 }
 
 .progress-chart-tooltip-above {
-  transform: translate(-50%, calc(-100% - 14px));
+  --tooltip-y: calc(-100% - 14px);
 }
 
 .progress-chart-tooltip-below {
-  transform: translate(-50%, 14px);
+  --tooltip-y: 14px;
+}
+
+.progress-chart-tooltip-center {
+  transform: translate(-50%, var(--tooltip-y));
+}
+
+.progress-chart-tooltip-left {
+  transform: translate(12px, var(--tooltip-y));
+}
+
+.progress-chart-tooltip-right {
+  transform: translate(calc(-100% - 12px), var(--tooltip-y));
 }
 
 .session-history-card {

@@ -91,6 +91,12 @@ export function ProgressTrendChart({ data }: ProgressTrendChartProps) {
   const chartPoints = mapPoints(points);
   const latest = points.at(-1);
   const tooltipPlacement = activePoint && activePoint.y < HEIGHT * 0.38 ? "below" : "above";
+  const tooltipAlign =
+    activePoint && activePoint.x < WIDTH * 0.2
+      ? "left"
+      : activePoint && activePoint.x > WIDTH * 0.8
+        ? "right"
+        : "center";
 
   return (
     <Card>
@@ -166,7 +172,7 @@ export function ProgressTrendChart({ data }: ProgressTrendChartProps) {
         </svg>
         {activePoint ? (
           <div
-            className={`progress-chart-tooltip progress-chart-tooltip-${tooltipPlacement}`}
+            className={`progress-chart-tooltip progress-chart-tooltip-${tooltipPlacement} progress-chart-tooltip-${tooltipAlign}`}
             style={{
               left: `${(activePoint.x / WIDTH) * 100}%`,
               top: `${(activePoint.y / HEIGHT) * 100}%`,

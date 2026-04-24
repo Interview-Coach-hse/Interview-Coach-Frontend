@@ -124,7 +124,7 @@ export function SessionDetailPage() {
         setMessage("");
 
         if (isAnsweringLastQuestion) {
-          handleFinish();
+          navigate(`/app/sessions/${sessionId}/report`);
         }
       },
     });

@@ -1,9 +1,13 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { InterviewDirection, InterviewLevel, QuestionStatus, QuestionType } from "@/api/generated/schema";
+import { adminApi, type ImportResponse } from "@/features/admin/api/admin.api";
 import { useAdminQuestions } from "@/features/admin/hooks/useAdmin";
+import { normalizeError } from "@/shared/lib/error";
 import { directionOptions, levelOptions, questionStatusOptions, questionTypeOptions } from "@/shared/lib/options";
 import { Badge, Button, Card, ErrorState, Loader, PageHeader, Select, Textarea, useToast } from "@/shared/ui";
 
@@ -16,7 +20,12 @@ const schema = z.object({
 });
 
 export function AdminQuestionsPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(0);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<ImportResponse | null>(null);
   const pageSize = 20;
   const { listQuery, createMutation, updateMutation, deleteMutation } = useAdminQuestions({
     page,
@@ -27,6 +36,7 @@ export function AdminQuestionsPage() {
   const { showToast } = useToast();
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const {
     register,
     handleSubmit,
@@ -43,6 +53,35 @@ export function AdminQuestionsPage() {
       status: QuestionStatus.Active,
     },
   });
+  const importMutation = useMutation({
+    mutationFn: adminApi.importJson,
+    onSuccess: () => {
+      void listQuery.refetch();
+    },
+  });
+  const importError = importMutation.error ? normalizeError(importMutation.error) : null;
+  const exampleJsonHref = useMemo(() => {
+    const example = {
+      profile: {
+        title: "Backend Middle Interview",
+        description: "Набор вопросов для backend-собеседования",
+        direction: "BACKEND",
+        level: "MIDDLE",
+        tags: ["spring", "sql", "rest"],
+      },
+      questions: [
+        {
+          text: "Что такое ACID в контексте баз данных?",
+          questionType: "TECHNICAL",
+          difficulty: "MIDDLE",
+          direction: "BACKEND",
+          status: "ACTIVE",
+        },
+      ],
+    };
+
+    return `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(example, null, 2))}`;
+  }, []);
 
   const resetForm = () => {
     setEditingQuestionId(null);
@@ -55,6 +94,36 @@ export function AdminQuestionsPage() {
     });
   };
 
+  const resetImportState = () => {
+    setSelectedFile(null);
+    setImportResult(null);
+    importMutation.reset();
+    setDragActive(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const closeImportModal = () => {
+    setShowImportModal(false);
+    resetImportState();
+  };
+
+  const handleFileSelected = (file?: File | null) => {
+    if (!file) {
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      showToast("Выберите JSON-файл");
+      return;
+    }
+
+    setSelectedFile(file);
+    setImportResult(null);
+    importMutation.reset();
+  };
+
   if (listQuery.isLoading) {
     return <Loader />;
   }
@@ -65,7 +134,22 @@ export function AdminQuestionsPage() {
 
   return (
     <div className="grid">
-      <PageHeader eyebrow="Admin Content" title="Вопросы" />
+      <PageHeader
+        eyebrow="Admin Content"
+        title="Вопросы"
+        actions={
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              resetImportState();
+              setShowImportModal(true);
+            }}
+          >
+            Импорт JSON
+          </Button>
+        }
+      />
       <Card>
         <p className="muted" style={{ marginBottom: "1rem" }}>
           {editingQuestionId ? "Режим редактирования вопроса" : "Создание нового вопроса"}
@@ -195,6 +279,114 @@ export function AdminQuestionsPage() {
           </tbody>
         </table>
       </Card>
+      {showImportModal ? (
+        <div className="modal-backdrop" role="presentation" onClick={closeImportModal}>
+          <div className="modal import-modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" aria-label="Закрыть" onClick={closeImportModal}>
+              ×
+            </button>
+            <p className="eyebrow">Импорт</p>
+            <h3 id="import-modal-title">Импорт JSON</h3>
+            <p className="muted">
+              Поддерживаются 2 формата: массив вопросов или объект с `profile` и `questions`.
+            </p>
+            <div className="inline-actions" style={{ marginBottom: "1rem" }}>
+              <a href={exampleJsonHref} download="import-example.json" className="ghost-link">
+                Скачать пример JSON
+              </a>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="import-input-hidden"
+              onChange={(event) => handleFileSelected(event.target.files?.[0] ?? null)}
+            />
+            <button
+              type="button"
+              className={`import-dropzone ${dragActive ? "import-dropzone-active" : ""}`}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault();
+                if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  return;
+                }
+
+                setDragActive(false);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragActive(false);
+                handleFileSelected(event.dataTransfer.files?.[0] ?? null);
+              }}
+            >
+              <strong>{selectedFile ? selectedFile.name : "Перетащите JSON сюда"}</strong>
+              <span className="muted">{selectedFile ? `Размер: ${Math.round(selectedFile.size / 1024)} KB` : "или нажмите, чтобы выбрать файл"}</span>
+            </button>
+            {importMutation.isError ? (
+              <div className="import-error-box">
+                <strong>Не удалось импортировать JSON. Проверьте структуру файла.</strong>
+                {importError?.message ? <p className="muted" style={{ marginBottom: 0 }}>{importError.message}</p> : null}
+              </div>
+            ) : null}
+            {importResult ? (
+              <Card className="import-summary-card">
+                <h3 style={{ marginBottom: "0.75rem" }}>{importResult.mode === "PROFILE" ? "Профиль создан" : "Импорт вопросов завершён"}</h3>
+                {importResult.mode === "PROFILE" && importResult.profileTitle ? (
+                  <p className="muted">Профиль: {importResult.profileTitle}</p>
+                ) : null}
+                <div className="list" style={{ gap: "0.5rem" }}>
+                  <p>Обработано вопросов: {importResult.totalQuestions}</p>
+                  <p>Создано новых: {importResult.createdQuestions}</p>
+                  <p>Переиспользовано: {importResult.reusedQuestions}</p>
+                  {importResult.mode === "PROFILE" ? <p>Привязано к профилю: {importResult.linkedQuestions}</p> : null}
+                </div>
+                {importResult.mode === "PROFILE" && importResult.profileId ? (
+                  <div className="inline-actions" style={{ marginTop: "1rem" }}>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        closeImportModal();
+                        navigate(`/admin/profiles/${importResult.profileId}/edit`);
+                      }}
+                    >
+                      Открыть профиль
+                    </Button>
+                  </div>
+                ) : null}
+              </Card>
+            ) : null}
+            <div className="inline-actions" style={{ marginTop: "1rem" }}>
+              <Button
+                type="button"
+                disabled={!selectedFile || importMutation.isPending}
+                onClick={async () => {
+                  if (!selectedFile) {
+                    return;
+                  }
+
+                  try {
+                    const result = await importMutation.mutateAsync(selectedFile);
+                    setImportResult(result);
+                    showToast(result.mode === "PROFILE" ? "Импорт профиля завершён" : "Импорт вопросов завершён");
+                  } catch {
+                    // Error is rendered inline in the modal.
+                  }
+                }}
+              >
+                {importMutation.isPending ? "Загружаем..." : "Загрузить"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={closeImportModal}>
+                Закрыть
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

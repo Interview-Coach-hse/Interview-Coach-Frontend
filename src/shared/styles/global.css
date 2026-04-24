@@ -919,6 +919,66 @@ h2 {
   justify-items: end;
 }
 
+.session-history-card-actions .badge,
+.session-history-card-actions .btn {
+  width: 13rem;
+  justify-content: center;
+  text-align: center;
+}
+
+.import-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.import-modal {
+  width: min(100%, 720px);
+}
+
+.import-dropzone {
+  display: grid;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 1.25rem;
+  border: 1px dashed rgba(176, 208, 255, 0.24);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.import-dropzone:hover,
+.import-dropzone:focus-visible,
+.import-dropzone-active {
+  border-color: rgba(100, 245, 210, 0.34);
+  background: rgba(100, 245, 210, 0.08);
+  transform: translateY(-1px);
+}
+
+.import-summary-card {
+  margin-top: 1rem;
+  border-radius: 20px;
+}
+
+.import-error-box {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(255, 122, 122, 0.28);
+  border-radius: 18px;
+  background: rgba(255, 122, 122, 0.08);
+  color: #ffd6d6;
+}
+
 @media (max-width: 900px) {
   .hero,
   .grid-2,
@@ -987,6 +1047,11 @@ h2 {
   .session-history-card-actions {
     width: 100%;
     justify-items: stretch;
+  }
+
+  .session-history-card-actions .badge,
+  .session-history-card-actions .btn {
+    width: 100%;
   }
 }
 

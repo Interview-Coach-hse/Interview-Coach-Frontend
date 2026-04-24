@@ -41,6 +41,16 @@ export type PageQuestionResponse = {
   totalPages?: number;
 };
 
+export type ImportResponse = {
+  mode: "QUESTIONS" | "PROFILE";
+  profileId: string | null;
+  profileTitle: string | null;
+  totalQuestions: number;
+  createdQuestions: number;
+  reusedQuestions: number;
+  linkedQuestions: number;
+};
+
 export const adminApi = {
   users: (filters: { email?: string; roleCode?: string }) =>
     request<AdminUserResponse[]>("/admin/users", { query: filters }),
@@ -70,6 +80,15 @@ export const adminApi = {
     request<void>(`/admin/questions/${questionId}`, {
       method: "DELETE",
     }),
+  importJson: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return request<ImportResponse>("/admin/import", {
+      method: "POST",
+      body: formData,
+    });
+  },
   createProfile: (payload: ProfileRequest) =>
     request<ProfileResponse>("/admin/profiles", {
       method: "POST",

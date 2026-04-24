@@ -62,6 +62,7 @@ export async function request<T>(path: string, options: RequestOptions = {}) {
   const { auth = true, retry = true, headers, query, ...init } = options;
   const token = auth ? authStore.getState().tokens?.accessToken : null;
   const url = buildUrl(path, query);
+  const isFormDataBody = init.body instanceof FormData;
 
   let response: Response;
 
@@ -69,8 +70,8 @@ export async function request<T>(path: string, options: RequestOptions = {}) {
     response = await fetch(url, {
       ...init,
       headers: {
-        "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(isFormDataBody ? {} : { "Content-Type": "application/json" }),
         ...headers,
       },
     });

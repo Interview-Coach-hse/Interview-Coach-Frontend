@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { authApi } from "@/features/auth/api/auth.api";
-import { Button, Card, ErrorState, Input } from "@/shared/ui";
+import { Button, Card, ErrorState, Input, useToast } from "@/shared/ui";
 
 const schema = z.object({
   email: z.string().email(),
@@ -15,6 +15,8 @@ type VerifyValues = z.infer<typeof schema>;
 
 export function VerifyEmailPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [submitError, setSubmitError] = useState<unknown>(null);
   const {
     register,
@@ -30,7 +32,10 @@ export function VerifyEmailPage() {
 
   async function onSubmit(values: VerifyValues) {
     try {
+      setSubmitError(null);
       await authApi.verifyEmailConfirm(values);
+      showToast("Email подтвержден");
+      navigate("/login", { replace: true });
     } catch (error) {
       setSubmitError(error);
     }

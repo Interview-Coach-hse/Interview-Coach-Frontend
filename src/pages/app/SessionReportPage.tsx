@@ -89,7 +89,6 @@ export function SessionReportPage() {
       <PageHeader
         eyebrow="AI Feedback"
         title="Отчет по сессии"
-        description={reportQuery.data?.summaryText ?? "Отчет собран backend и готов к просмотру."}
       />
       <SessionReportSummary report={reportQuery.data} onRetry={() => void reportQuery.refetch()} />
     </div>

@@ -52,6 +52,8 @@ export const sessionsApi = {
     }),
   report: (sessionId: UUID) =>
     request<ReportResponse>(`/sessions/${sessionId}/report`),
+  retryReport: (sessionId: UUID) =>
+    request<void>(`/sessions/${sessionId}/report/retry`, { method: "POST" }),
   history: (filters: HistoryFilters) =>
     request<PageSessionResponse>("/history/sessions", {
       query: filters,

@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { SessionState } from "@/api/generated/schema";
+import { ReportStatus, SessionState } from "@/api/generated/schema";
+import { sessionsApi } from "@/features/sessions/api/sessions.api";
 import { useSessionReport } from "@/features/sessions/hooks/useSessionReport";
 import { SessionReportSummary } from "@/features/sessions/ui/SessionReportSummary";
 import { useSession } from "@/features/sessions/hooks/useSession";
@@ -10,6 +12,7 @@ import { Badge, Card, ErrorState, Loader, PageHeader } from "@/shared/ui";
 export function SessionHistoryDetailPage() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { sessionQuery, messagesQuery } = useSession(sessionId);
   const state = sessionQuery.data?.state;
   const reportQuery = useSessionReport(
@@ -19,6 +22,16 @@ export function SessionHistoryDetailPage() {
       state !== SessionState.InProgress &&
       state !== SessionState.Paused,
   );
+  const retryReportMutation = useMutation({
+    mutationFn: () => sessionsApi.retryReport(sessionId!),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+      await queryClient.invalidateQueries({ queryKey: ["session", sessionId, "report"] });
+      await queryClient.invalidateQueries({ queryKey: ["history"] });
+      await sessionQuery.refetch();
+      await reportQuery.refetch();
+    },
+  });
 
   useEffect(() => {
     if (
@@ -75,7 +88,15 @@ export function SessionHistoryDetailPage() {
           report={reportQuery.data}
           isLoading={reportQuery.isLoading}
           isError={reportQuery.isError}
-          onRetry={() => void reportQuery.refetch()}
+          isRetrying={retryReportMutation.isPending}
+          onRetry={() => {
+            if (reportQuery.data?.status === ReportStatus.Failed) {
+              retryReportMutation.mutate();
+              return;
+            }
+
+            void reportQuery.refetch();
+          }}
         />
       </div>
     </div>

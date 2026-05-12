@@ -3,7 +3,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import { MessageType, SenderType, SessionState } from "@/api/generated/schema";
 import { useProfile } from "@/features/profiles/hooks/useProfiles";
 import { useSession } from "@/features/sessions/hooks/useSession";
+import { HttpError } from "@/shared/lib/error";
 import { Button, Card, ErrorState, Loader, PageHeader, Textarea } from "@/shared/ui";
+
+function isFinishStateConflict(error: unknown) {
+  return (
+    error instanceof HttpError &&
+    error.status === 400 &&
+    error.payload?.message?.toLowerCase().includes("session cannot be finished from current state")
+  );
+}
 
 export function SessionDetailPage() {
   const { sessionId } = useParams();
@@ -22,6 +31,7 @@ export function SessionDetailPage() {
   const isInProgress = state === SessionState.InProgress;
   const isPaused = state === SessionState.Paused;
   const isLocked = !isInProgress;
+  const canFinish = isInProgress || isPaused;
   const totalQuestions = profileQuery.data?.questions?.length ?? 0;
   const askedQuestionsCount = messages.filter(
     (item) => item.senderType === SenderType.Interviewer && item.messageType === MessageType.Question,
@@ -46,10 +56,44 @@ export function SessionDetailPage() {
     });
   };
 
-  const handleFinish = () => {
-    finishMutation.mutate(undefined, {
-      onSuccess: () => navigate(`/app/sessions/${sessionId}/report`),
-    });
+  const handleFinish = async () => {
+    const freshSession = await sessionQuery.refetch();
+    const freshState = freshSession.data?.state;
+
+    if (
+      freshState === SessionState.Processing ||
+      freshState === SessionState.Finished ||
+      freshState === SessionState.Failed ||
+      freshState === SessionState.Canceled
+    ) {
+      navigate(`/app/sessions/${sessionId}/report`);
+      return;
+    }
+
+    if (freshState !== SessionState.InProgress && freshState !== SessionState.Paused) {
+      return;
+    }
+
+    try {
+      await finishMutation.mutateAsync();
+      navigate(`/app/sessions/${sessionId}/report`);
+    } catch (error) {
+      if (!isFinishStateConflict(error)) {
+        return;
+      }
+
+      const nextSession = await sessionQuery.refetch();
+      const nextState = nextSession.data?.state;
+
+      if (
+        nextState === SessionState.Processing ||
+        nextState === SessionState.Finished ||
+        nextState === SessionState.Failed ||
+        nextState === SessionState.Canceled
+      ) {
+        navigate(`/app/sessions/${sessionId}/report`);
+      }
+    }
   };
 
   useEffect(() => {
@@ -111,7 +155,7 @@ export function SessionDetailPage() {
         error={finishMutation.error}
         retry={() => {
           finishMutation.reset();
-          handleFinish();
+          void handleFinish();
         }}
       />
     );
@@ -142,12 +186,14 @@ export function SessionDetailPage() {
             {state === "IN_PROGRESS" ? <Button variant="secondary" onClick={() => pauseMutation.mutate()}>Пауза</Button> : null}
             {state === "PAUSED" ? <Button variant="secondary" onClick={() => resumeMutation.mutate()}>Возобновить</Button> : null}
             <Button variant="danger" onClick={() => cancelMutation.mutate()}>Отменить</Button>
-            <Button
-              disabled={finishMutation.isPending}
-              onClick={handleFinish}
-            >
-              {finishMutation.isPending ? "Завершаем..." : "Завершить"}
-            </Button>
+            {canFinish ? (
+              <Button
+                disabled={finishMutation.isPending || sendMessageMutation.isPending}
+                onClick={() => void handleFinish()}
+              >
+                {finishMutation.isPending ? "Завершаем..." : "Завершить"}
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -200,8 +246,8 @@ export function SessionDetailPage() {
             <Button
               type="button"
               variant="ghost"
-              disabled={finishMutation.isPending}
-              onClick={handleFinish}
+              disabled={!canFinish || finishMutation.isPending || sendMessageMutation.isPending}
+              onClick={() => void handleFinish()}
             >
               {finishMutation.isPending ? "Готовим отчет..." : "Завершить и перейти к отчету"}
             </Button>

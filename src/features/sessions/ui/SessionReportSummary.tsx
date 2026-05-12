@@ -6,6 +6,7 @@ type SessionReportSummaryProps = {
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
+  isRetrying?: boolean;
 };
 
 function formatReportScore(value?: number | null) {
@@ -44,7 +45,7 @@ function sortReportItems(items?: ReportItemResponse[]) {
   return [...(items ?? [])].sort((left, right) => (left.sortOrder ?? Number.MAX_SAFE_INTEGER) - (right.sortOrder ?? Number.MAX_SAFE_INTEGER));
 }
 
-export function SessionReportSummary({ report, isLoading, isError, onRetry }: SessionReportSummaryProps) {
+export function SessionReportSummary({ report, isLoading, isError, onRetry, isRetrying }: SessionReportSummaryProps) {
   if (isLoading || report?.status === ReportStatus.Pending) {
     return (
       <Card>
@@ -56,11 +57,15 @@ export function SessionReportSummary({ report, isLoading, isError, onRetry }: Se
   if (isError || report?.status === ReportStatus.Failed) {
     return (
       <Card>
-        <EmptyState
-          title="Не удалось сформировать отчёт"
-          description="Попробуйте обновить данные ещё раз. Если проблема повторится, значит backend не смог собрать финальный анализ."
-          action={onRetry ? { label: "Обновить", onClick: onRetry } : undefined}
-        />
+        {isRetrying ? (
+          <Loader label="Перезапускаем генерацию отчёта..." />
+        ) : (
+          <EmptyState
+            title="Не удалось сформировать отчёт"
+            description="Попробуйте сформировать отчёт ещё раз. Если проблема повторится, значит backend не смог собрать финальный анализ."
+            action={onRetry ? { label: "Сформировать отчёт ещё раз", onClick: onRetry } : undefined}
+          />
+        )}
       </Card>
     );
   }
